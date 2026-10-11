@@ -33,14 +33,14 @@ export default function MapSidebar({ snapshot }: { snapshot: MapSnapshot }) {
     return notables.filter((p) => p.death <= snapshot.year)
   }, [notables, snapshot.year])
 
-  const { gender, occupation_top } = snapshot.demographics
+  const { gender, avg_age_at_death, cemetery_acreage, historical_context } = snapshot.demographics
   const total = gender.Male + gender.Female
   const malePct = Math.round((gender.Male / total) * 100)
 
   return (
     <div className="w-80 bg-white border-l border-stone-200 flex flex-col overflow-y-auto">
       <div className="p-5 border-b border-stone-200">
-        <h2 className="text-3xl font-bold text-stone-800 tabular-nums">{snapshot.year}</h2>
+        <h2 className="text-3xl font-bold text-stone-800 tabular-nums">{snapshot.year === 1970 ? '1970–Present' : snapshot.year}</h2>
         <p className="text-sm text-stone-500 mt-1">Cemetery snapshot</p>
       </div>
 
@@ -73,19 +73,23 @@ export default function MapSidebar({ snapshot }: { snapshot: MapSnapshot }) {
             <div className="bg-amber-600 flex-1 transition-all duration-500" />
           </div>
         </div>
-        <div className="mt-3">
-          <p className="text-xs text-stone-500 mb-1">Top occupations</p>
-          <div className="flex flex-wrap gap-1">
-            {occupation_top.map((occ) => (
-              <span
-                key={occ}
-                className="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full"
-              >
-                {occ}
-              </span>
-            ))}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-stone-500">Avg. age at death</p>
+            <p className="text-lg font-semibold text-stone-800 tabular-nums">{avg_age_at_death}</p>
+          </div>
+          <div>
+            <p className="text-xs text-stone-500">Cemetery acreage</p>
+            <p className="text-lg font-semibold text-stone-800 tabular-nums">{cemetery_acreage} acres</p>
           </div>
         </div>
+      </div>
+
+      <div className="p-5 border-b border-stone-200">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
+          Historical Context
+        </h3>
+        <p className="text-sm text-stone-600 leading-relaxed">{historical_context}</p>
       </div>
 
       <div className="p-5 flex-1">

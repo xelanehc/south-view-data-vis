@@ -1,5 +1,5 @@
 import * as d3 from 'd3'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { events, individuals } from '../data'
 import type { CemeteryEvent, Individual } from '../types'
 
@@ -79,54 +79,313 @@ function buildEventGraph(): { nodes: GraphNode[]; links: GraphLink[] } {
   return { nodes: [...personNodes, ...eventNodes], links }
 }
 
+function DetailPanel({
+  mode,
+  selected,
+  searchQuery,
+  onSearchChange,
+  searchResults,
+  eventSearchResults,
+  onSelectResult,
+  onClose,
+}: {
+  mode: GraphMode
+  selected: GraphNode | null
+  searchQuery: string
+  onSearchChange: (q: string) => void
+  searchResults: Individual[]
+  eventSearchResults: CemeteryEvent[]
+  onSelectResult: (id: string) => void
+  onClose: () => void
+}) {
+  const placeholder = mode === 'events'
+    ? 'Search individuals or events...'
+    : 'Search individuals...'
+
+  return (
+    <div className="w-80 bg-white border-l border-stone-200 flex flex-col overflow-hidden shrink-0">
+      {/* Search */}
+      <div className="p-4 border-b border-stone-200">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full px-3 py-2 text-sm border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+        />
+        {searchQuery && (searchResults.length > 0 || eventSearchResults.length > 0) && (
+          <ul className="mt-2 max-h-56 overflow-y-auto">
+            {eventSearchResults.length > 0 && (
+              <>
+                <li className="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-stone-400">
+                  Events
+                </li>
+                {eventSearchResults.map((ev) => (
+                  <li key={ev.id}>
+                    <button
+                      onClick={() => onSelectResult(ev.id)}
+                      className="w-full text-left px-2 py-1.5 text-sm text-stone-700 hover:bg-stone-100 rounded"
+                    >
+                      <span className="font-medium">{ev.name}</span>
+                      <span className="text-stone-400 ml-1 text-xs">
+                        {ev.year_range[0]}–{ev.year_range[1]}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </>
+            )}
+            {searchResults.length > 0 && (
+              <>
+                {eventSearchResults.length > 0 && (
+                  <li className="px-2 pt-2 py-1 text-xs font-semibold uppercase tracking-wider text-stone-400">
+                    Individuals
+                  </li>
+                )}
+                {searchResults.map((person) => (
+                  <li key={person.id}>
+                    <button
+                      onClick={() => onSelectResult(person.id)}
+                      className="w-full text-left px-2 py-1.5 text-sm text-stone-700 hover:bg-stone-100 rounded"
+                    >
+                      <span className="font-medium">{person.name}</span>
+                      <span className="text-stone-400 ml-1 text-xs">
+                        {person.birth}–{person.death}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </>
+            )}
+          </ul>
+        )}
+        {searchQuery && searchResults.length === 0 && eventSearchResults.length === 0 && (
+          <p className="mt-2 text-xs text-stone-400 italic">No results found</p>
+        )}
+      </div>
+
+      {/* Detail view */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {selected ? (
+          selected.type === 'person' ? (
+            <PersonDetail person={selected.data as Individual} onClose={onClose} />
+          ) : (
+            <EventDetail event={selected.data as CemeteryEvent} onClose={onClose} />
+          )
+        ) : (
+          <div className="flex items-center justify-center h-full text-stone-400 text-sm text-center px-4">
+            Click a node on the graph or use the search bar to view details
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function PersonDetail({ person, onClose }: { person: Individual; onClose: () => void }) {
+  const relatedPeople = person.relations
+    .map((r) => {
+      const target = individuals.find((p) => p.id === r.target)
+      return target ? { ...r, name: target.name } : null
+    })
+    .filter(Boolean) as { target: string; type: string; name: string }[]
+
+  const linkedEvents = person.events
+    .map((e) => {
+      const ev = events.find((ev) => ev.id === e.event_id)
+      return ev ? { ...e, name: ev.name } : null
+    })
+    .filter(Boolean) as { event_id: string; role: string; name: string }[]
+
+  return (
+    <div>
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <h3 className="text-lg font-semibold text-stone-800">{person.name}</h3>
+          <p className="text-xs text-stone-500">
+            {person.birth}–{person.death} &middot; {person.demographics.occupation}
+          </p>
+        </div>
+        <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-sm p-1">
+          &times;
+        </button>
+      </div>
+
+      {person.notable && (
+        <span className="inline-block text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full mb-3">
+          Notable Figure
+        </span>
+      )}
+
+      <p className="text-sm text-stone-600 leading-relaxed mb-4">{person.bio}</p>
+
+      <div className="text-xs text-stone-500 mb-1">
+        Section {person.section}, Plot {person.plot}
+      </div>
+
+      {relatedPeople.length > 0 && (
+        <div className="mt-4">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
+            Connections
+          </h4>
+          <ul className="space-y-1">
+            {relatedPeople.map((r) => (
+              <li key={r.target} className="text-sm text-stone-600">
+                <span className="text-stone-400 capitalize">{r.type}:</span> {r.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {linkedEvents.length > 0 && (
+        <div className="mt-4">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
+            Events
+          </h4>
+          <ul className="space-y-1">
+            {linkedEvents.map((e) => (
+              <li key={e.event_id} className="text-sm text-stone-600">
+                <span className="font-medium">{e.name}</span>
+                <span className="text-stone-400 ml-1">— {e.role}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EventDetail({ event, onClose }: { event: CemeteryEvent; onClose: () => void }) {
+  const linkedPeople = individuals.filter((p) =>
+    p.events.some((e) => e.event_id === event.id)
+  )
+
+  return (
+    <div>
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <h3 className="text-lg font-semibold text-stone-800">{event.name}</h3>
+          <p className="text-xs text-stone-500">
+            {event.year_range[0]}–{event.year_range[1]} &middot; {event.type}
+          </p>
+        </div>
+        <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-sm p-1">
+          &times;
+        </button>
+      </div>
+
+      <p className="text-sm text-stone-600 leading-relaxed mb-4">{event.description}</p>
+
+      {linkedPeople.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
+            Connected Individuals
+          </h4>
+          <ul className="space-y-1">
+            {linkedPeople.map((p) => {
+              const link = p.events.find((e) => e.event_id === event.id)
+              return (
+                <li key={p.id} className="text-sm text-stone-600">
+                  <span className="font-medium">{p.name}</span>
+                  {link && <span className="text-stone-400 ml-1">— {link.role}</span>}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function NetworkGraphView() {
   const svgRef = useRef<SVGSVGElement>(null)
+  const simulationRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null)
+  const nodesRef = useRef<GraphNode[]>([])
+  const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null)
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
+
   const [mode, setMode] = useState<GraphMode>('relations')
-  const [tooltip, setTooltip] = useState<{
-    x: number
-    y: number
-    content: React.ReactNode
-  } | null>(null)
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    const q = searchQuery.toLowerCase()
+    return individuals.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.demographics.occupation.toLowerCase().includes(q)
+    )
+  }, [searchQuery])
+
+  const eventSearchResults = useMemo(() => {
+    if (mode !== 'events' || !searchQuery.trim()) return []
+    const q = searchQuery.toLowerCase()
+    return events.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        e.type.toLowerCase().includes(q)
+    )
+  }, [searchQuery, mode])
+
+  const selectNodeById = useCallback((id: string) => {
+    const node = nodesRef.current.find((n) => n.id === id)
+    if (!node || !svgRef.current || !gRef.current || !zoomRef.current) return
+
+    setSelectedNode(node)
+    setSearchQuery('')
+
+    // Highlight the selected node
+    gRef.current.selectAll<SVGGElement, GraphNode>('g.node-group')
+      .select('.node-highlight')
+      .attr('opacity', (d) => d.id === id ? 1 : 0)
+
+    // Center on the node with a smooth transition
+    const svg = d3.select(svgRef.current)
+    const rect = svgRef.current.getBoundingClientRect()
+    const transform = d3.zoomIdentity
+      .translate(rect.width / 2, rect.height / 2)
+      .scale(1.5)
+      .translate(-node.x!, -node.y!)
+
+    svg.transition().duration(600).call(zoomRef.current.transform, transform)
+  }, [])
 
   const render = useCallback(() => {
     const svg = d3.select(svgRef.current!)
     svg.selectAll('*').remove()
-    setTooltip(null)
+    setSelectedNode(null)
 
     const rect = svgRef.current!.getBoundingClientRect()
     const width = rect.width
     const height = rect.height
 
     const { nodes, links } = mode === 'relations' ? buildRelationGraph() : buildEventGraph()
+    nodesRef.current = nodes
 
     const g = svg.append('g')
+    gRef.current = g
 
     // Zoom
-    svg.call(
-      d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.3, 4])
-        .on('zoom', (event) => {
-          g.attr('transform', event.transform)
-        })
-    )
-
-    // Arrow marker
-    svg.append('defs').append('marker')
-      .attr('id', 'arrow')
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 20)
-      .attr('markerWidth', 6)
-      .attr('markerHeight', 6)
-      .attr('orient', 'auto')
-      .append('path')
-      .attr('d', 'M0,-5L10,0L0,5')
-      .attr('fill', '#a8a29e')
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.3, 4])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform)
+      })
+    zoomRef.current = zoom
+    svg.call(zoom)
 
     const simulation = d3.forceSimulation<GraphNode>(nodes)
-      .force('link', d3.forceLink<GraphNode, GraphLink>(links).id((d) => d.id).distance(120))
-      .force('charge', d3.forceManyBody().strength(-300))
+      .force('link', d3.forceLink<GraphNode, GraphLink>(links).id((d) => d.id).distance(100).strength(0.4))
+      .force('charge', d3.forceManyBody().strength(-250))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide(30))
+      .force('collision', d3.forceCollide(40))
+      .alphaDecay(0.03)
+      .velocityDecay(0.5)
+    simulationRef.current = simulation
 
     // Links
     const link = g.append('g')
@@ -155,10 +414,12 @@ export default function NetworkGraphView() {
       .selectAll<SVGGElement, GraphNode>('g')
       .data(nodes)
       .join('g')
+      .attr('class', 'node-group')
+      .style('cursor', 'pointer')
       .call(
         d3.drag<SVGGElement, GraphNode>()
           .on('start', (event, d) => {
-            if (!event.active) simulation.alphaTarget(0.3).restart()
+            if (!event.active) simulation.alphaTarget(0.1).restart()
             d.fx = d.x
             d.fy = d.y
           })
@@ -177,6 +438,19 @@ export default function NetworkGraphView() {
     node.each(function (d) {
       const el = d3.select(this)
       if (d.type === 'event') {
+        // Highlight ring (hidden by default)
+        el.append('rect')
+          .attr('class', 'node-highlight')
+          .attr('x', -24)
+          .attr('y', -18)
+          .attr('width', 48)
+          .attr('height', 36)
+          .attr('rx', 8)
+          .attr('fill', 'none')
+          .attr('stroke', '#f59e0b')
+          .attr('stroke-width', 3)
+          .attr('opacity', 0)
+
         el.append('rect')
           .attr('x', -20)
           .attr('y', -14)
@@ -188,8 +462,19 @@ export default function NetworkGraphView() {
           .attr('stroke-width', 2)
       } else {
         const person = d.data as Individual
+        const r = person.notable ? 14 : 10
+
+        // Highlight ring (hidden by default)
         el.append('circle')
-          .attr('r', person.notable ? 14 : 10)
+          .attr('class', 'node-highlight')
+          .attr('r', r + 5)
+          .attr('fill', 'none')
+          .attr('stroke', '#f59e0b')
+          .attr('stroke-width', 3)
+          .attr('opacity', 0)
+
+        el.append('circle')
+          .attr('r', r)
           .attr('fill', person.notable ? '#1e40af' : '#57534e')
           .attr('stroke', person.notable ? '#1e3a8a' : '#44403c')
           .attr('stroke-width', 2)
@@ -212,35 +497,16 @@ export default function NetworkGraphView() {
       .attr('text-anchor', 'middle')
       .attr('dy', (d) => d.type === 'event' ? 28 : ((d.data as Individual).notable ? 26 : 22))
 
-    // Hover
-    node.on('mouseenter', (event, d) => {
-      const [x, y] = d3.pointer(event, svgRef.current!)
-      if (d.type === 'person') {
-        const p = d.data as Individual
-        setTooltip({
-          x, y: y - 10,
-          content: (
-            <div>
-              <div className="font-semibold">{p.name}</div>
-              <div className="text-xs text-stone-500">{p.birth}–{p.death} &middot; {p.demographics.occupation}</div>
-              <p className="text-xs mt-1 max-w-60">{p.bio}</p>
-            </div>
-          ),
-        })
-      } else {
-        const e = d.data as CemeteryEvent
-        setTooltip({
-          x, y: y - 10,
-          content: (
-            <div>
-              <div className="font-semibold">{e.name}</div>
-              <div className="text-xs text-stone-500">{e.year_range[0]}–{e.year_range[1]} &middot; {e.type}</div>
-              <p className="text-xs mt-1 max-w-60">{e.description}</p>
-            </div>
-          ),
-        })
-      }
-    }).on('mouseleave', () => setTooltip(null))
+    // Click to select
+    node.on('click', (_event, d) => {
+      setSelectedNode(d)
+      setSearchQuery('')
+
+      // Update highlight rings
+      g.selectAll<SVGGElement, GraphNode>('g.node-group')
+        .select('.node-highlight')
+        .attr('opacity', (n) => n.id === d.id ? 1 : 0)
+    })
 
     simulation.on('tick', () => {
       link
@@ -304,20 +570,26 @@ export default function NetworkGraphView() {
         </div>
       </div>
 
-      <div className="flex-1 relative bg-stone-50">
-        <svg ref={svgRef} className="w-full h-full" />
-        {tooltip && (
-          <div
-            className="absolute pointer-events-none bg-white border border-stone-200 rounded-lg shadow-lg p-3 text-sm text-stone-700 z-50"
-            style={{
-              left: tooltip.x + 12,
-              top: tooltip.y - 20,
-              maxWidth: 280,
-            }}
-          >
-            {tooltip.content}
-          </div>
-        )}
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 relative bg-stone-50">
+          <svg ref={svgRef} className="w-full h-full" />
+        </div>
+        <DetailPanel
+          mode={mode}
+          selected={selectedNode}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchResults={searchResults}
+          eventSearchResults={eventSearchResults}
+          onSelectResult={selectNodeById}
+          onClose={() => {
+            setSelectedNode(null)
+            // Clear all highlights
+            if (gRef.current) {
+              gRef.current.selectAll('.node-highlight').attr('opacity', 0)
+            }
+          }}
+        />
       </div>
     </div>
   )

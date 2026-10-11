@@ -1,44 +1,44 @@
 [
   {
     "id": "event-1",
-    "name": "Founding of South-View Cemetery",
+    "name": "Cemetery Founding",
     "year_range": [1886, 1886],
-    "description": "A group of Black civic and church leaders in Atlanta established South-View Cemetery so that African Americans could be buried with dignity and respect, free from the segregated and neglected conditions of existing city cemeteries.",
+    "description": "A group of civic and church leaders established the cemetery so that community members could be buried with dignity and respect, free from the neglected conditions of existing burial grounds.",
     "type": "Founding"
   },
   {
     "id": "event-2",
-    "name": "Atlanta Race Massacre of 1906",
+    "name": "Civil Unrest of 1906",
     "year_range": [1906, 1906],
-    "description": "A violent white-supremacist attack that swept through Atlanta over four days in September 1906. Mobs destroyed Black businesses, homes, and attacked Black residents. The massacre reshaped the city's racial geography and deepened community solidarity.",
+    "description": "A period of violent unrest that swept through the area over several days. Businesses and homes were destroyed and residents were attacked. The event reshaped the community's geography and deepened solidarity.",
     "type": "Tragedy"
   },
   {
     "id": "event-3",
-    "name": "Atlanta Black Voter Registration Drives",
+    "name": "Voter Registration Drives",
     "year_range": [1936, 1960],
-    "description": "Sustained campaigns to register Black voters in Atlanta and Fulton County. Led by civic leaders like John Wesley Dobbs, these drives transformed Atlanta's political landscape and helped elect the city's first moderate white mayors.",
+    "description": "Sustained campaigns to register Black voters in the county. Led by civic leaders, these drives transformed the local political landscape and helped elect more representative officials.",
     "type": "Movement"
   },
   {
     "id": "event-4",
-    "name": "Founding of Atlanta Life Insurance Company",
+    "name": "Community Insurance Co. Founded",
     "year_range": [1905, 1905],
-    "description": "Alonzo Herndon purchased a failing mutual aid association and built it into Atlanta Life Insurance Company, which became one of the largest Black-owned businesses in the nation and a pillar of Auburn Avenue's economic ecosystem.",
+    "description": "A local entrepreneur purchased a failing mutual aid association and built it into a major insurance company, which became one of the largest Black-owned businesses in the region.",
     "type": "Founding"
   },
   {
     "id": "event-5",
-    "name": "Auburn Avenue Golden Era",
+    "name": "Commercial District Golden Era",
     "year_range": [1900, 1960],
-    "description": "Auburn Avenue, known as 'Sweet Auburn,' became the richest Black street in America. It was home to Black-owned businesses, churches, newspapers, and cultural institutions that anchored Atlanta's African American community.",
+    "description": "The main commercial avenue became a thriving center of Black-owned businesses, churches, newspapers, and cultural institutions that anchored the African American community.",
     "type": "Cultural"
   },
   {
     "id": "event-6",
-    "name": "Black Workers' Labor Movement in Atlanta",
+    "name": "Workers' Labor Movement",
     "year_range": [1930, 1945],
-    "description": "Black workers organized across trades — Pullman porters, domestic workers, garment workers — demanding fair wages and safer conditions. These labor efforts connected to broader national movements for Black economic justice.",
+    "description": "Workers organized across trades — porters, domestic workers, garment workers — demanding fair wages and safer conditions. These labor efforts connected to broader national movements for economic justice.",
     "type": "Movement"
   }
 ]

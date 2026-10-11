@@ -39,7 +39,9 @@ export interface CemeteryEvent {
 
 export interface SnapshotDemographics {
   gender: { Male: number; Female: number }
-  occupation_top: string[]
+  avg_age_at_death: number
+  cemetery_acreage: number
+  historical_context: string
 }
 
 export interface MapSnapshot {

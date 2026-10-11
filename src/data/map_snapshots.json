@@ -6,9 +6,11 @@
     "notable_figures": ["person-5"],
     "demographics": {
       "gender": { "Male": 30, "Female": 18 },
-      "occupation_top": ["Laborer", "Minister", "Domestic worker"]
+      "avg_age_at_death": 42,
+      "cemetery_acreage": 9,
+      "historical_context": "Four years after founding. The cemetery serves as one of the only dignified burial grounds for the local Black community during the height of Jim Crow segregation."
     },
-    "bounds": [[33.7182, -84.3793], [33.7190, -84.3782]]
+    "bounds": [[33.7015, -84.3710], [33.7030, -84.3695]]
   },
   {
     "year": 1900,
@@ -17,9 +19,11 @@
     "notable_figures": ["person-5", "person-6"],
     "demographics": {
       "gender": { "Male": 88, "Female": 57 },
-      "occupation_top": ["Laborer", "Minister", "Domestic worker", "Teacher"]
+      "avg_age_at_death": 44,
+      "cemetery_acreage": 12,
+      "historical_context": "The local Black population is growing rapidly. The main commercial avenue is emerging as a center of Black commerce, and the cemetery is becoming the burial ground of the growing middle class."
     },
-    "bounds": [[33.7179, -84.3797], [33.7193, -84.3778]]
+    "bounds": [[33.7010, -84.3710], [33.7032, -84.3690]]
   },
   {
     "year": 1920,
@@ -28,9 +32,11 @@
     "notable_figures": ["person-5", "person-6", "person-4", "person-13"],
     "demographics": {
       "gender": { "Male": 252, "Female": 178 },
-      "occupation_top": ["Laborer", "Domestic worker", "Minister", "Teacher", "Business owner"]
+      "avg_age_at_death": 47,
+      "cemetery_acreage": 18,
+      "historical_context": "The aftermath of the 1906 civil unrest and World War I have reshaped the community. The Great Migration is pulling many residents northward, but local institutions are strengthening."
     },
-    "bounds": [[33.7175, -84.3802], [33.7196, -84.3773]]
+    "bounds": [[33.7005, -84.3712], [33.7033, -84.3685]]
   },
   {
     "year": 1940,
@@ -39,9 +45,11 @@
     "notable_figures": ["person-5", "person-6", "person-3", "person-4", "person-9", "person-13"],
     "demographics": {
       "gender": { "Male": 660, "Female": 520 },
-      "occupation_top": ["Laborer", "Domestic worker", "Teacher", "Minister", "Business owner", "Physician"]
+      "avg_age_at_death": 52,
+      "cemetery_acreage": 25,
+      "historical_context": "The Great Depression tested the community, but the commercial district thrives. Voter registration drives are gaining momentum and civic organizations are expanding their reach."
     },
-    "bounds": [[33.7170, -84.3808], [33.7199, -84.3768]]
+    "bounds": [[33.6998, -84.3712], [33.7035, -84.3660]]
   },
   {
     "year": 1960,
@@ -50,9 +58,11 @@
     "notable_figures": ["person-5", "person-6", "person-3", "person-4", "person-9", "person-8", "person-1", "person-16"],
     "demographics": {
       "gender": { "Male": 1540, "Female": 1310 },
-      "occupation_top": ["Laborer", "Domestic worker", "Teacher", "Minister", "Business owner", "Physician", "Civic leader"]
+      "avg_age_at_death": 58,
+      "cemetery_acreage": 40,
+      "historical_context": "The area is becoming a center of the Civil Rights Movement. Many buried here were part of the generations that laid its groundwork — through voter drives, institution building, and community organizing."
     },
-    "bounds": [[33.7165, -84.3815], [33.7202, -84.3762]]
+    "bounds": [[33.6995, -84.3712], [33.7035, -84.3658]]
   },
   {
     "year": 1970,
@@ -61,8 +71,10 @@
     "notable_figures": ["person-5", "person-6", "person-3", "person-4", "person-9", "person-8", "person-1", "person-16", "person-2"],
     "demographics": {
       "gender": { "Male": 2250, "Female": 1950 },
-      "occupation_top": ["Laborer", "Teacher", "Domestic worker", "Business owner", "Minister", "Physician", "Civic leader", "Craftsman"]
+      "avg_age_at_death": 62,
+      "cemetery_acreage": 100,
+      "historical_context": "The cemetery now spans 100 acres and holds over a century of local Black history. It is a living archive of the community's resilience — from Reconstruction through the Civil Rights era and beyond."
     },
-    "bounds": [[33.7160, -84.3820], [33.7205, -84.3755]]
+    "bounds": [[33.6990, -84.3712], [33.7035, -84.3655]]
   }
 ]
