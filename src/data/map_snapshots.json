@@ -1,0 +1,68 @@
+[
+  {
+    "year": 1890,
+    "total_burials": 48,
+    "sections_active": ["A"],
+    "notable_figures": ["person-5"],
+    "demographics": {
+      "gender": { "Male": 30, "Female": 18 },
+      "occupation_top": ["Laborer", "Minister", "Domestic worker"]
+    },
+    "bounds": [[33.7182, -84.3793], [33.7190, -84.3782]]
+  },
+  {
+    "year": 1900,
+    "total_burials": 145,
+    "sections_active": ["A", "B"],
+    "notable_figures": ["person-5", "person-6"],
+    "demographics": {
+      "gender": { "Male": 88, "Female": 57 },
+      "occupation_top": ["Laborer", "Minister", "Domestic worker", "Teacher"]
+    },
+    "bounds": [[33.7179, -84.3797], [33.7193, -84.3778]]
+  },
+  {
+    "year": 1920,
+    "total_burials": 430,
+    "sections_active": ["A", "B", "C"],
+    "notable_figures": ["person-5", "person-6", "person-4", "person-13"],
+    "demographics": {
+      "gender": { "Male": 252, "Female": 178 },
+      "occupation_top": ["Laborer", "Domestic worker", "Minister", "Teacher", "Business owner"]
+    },
+    "bounds": [[33.7175, -84.3802], [33.7196, -84.3773]]
+  },
+  {
+    "year": 1940,
+    "total_burials": 1180,
+    "sections_active": ["A", "B", "C", "D"],
+    "notable_figures": ["person-5", "person-6", "person-3", "person-4", "person-9", "person-13"],
+    "demographics": {
+      "gender": { "Male": 660, "Female": 520 },
+      "occupation_top": ["Laborer", "Domestic worker", "Teacher", "Minister", "Business owner", "Physician"]
+    },
+    "bounds": [[33.7170, -84.3808], [33.7199, -84.3768]]
+  },
+  {
+    "year": 1960,
+    "total_burials": 2850,
+    "sections_active": ["A", "B", "C", "D", "E"],
+    "notable_figures": ["person-5", "person-6", "person-3", "person-4", "person-9", "person-8", "person-1", "person-16"],
+    "demographics": {
+      "gender": { "Male": 1540, "Female": 1310 },
+      "occupation_top": ["Laborer", "Domestic worker", "Teacher", "Minister", "Business owner", "Physician", "Civic leader"]
+    },
+    "bounds": [[33.7165, -84.3815], [33.7202, -84.3762]]
+  },
+  {
+    "year": 1970,
+    "total_burials": 4200,
+    "sections_active": ["A", "B", "C", "D", "E", "F"],
+    "notable_figures": ["person-5", "person-6", "person-3", "person-4", "person-9", "person-8", "person-1", "person-16", "person-2"],
+    "demographics": {
+      "gender": { "Male": 2250, "Female": 1950 },
+      "occupation_top": ["Laborer", "Teacher", "Domestic worker", "Business owner", "Minister", "Physician", "Civic leader", "Craftsman"]
+    },
+    "bounds": [[33.7160, -84.3820], [33.7205, -84.3755]]
+  }
+]
