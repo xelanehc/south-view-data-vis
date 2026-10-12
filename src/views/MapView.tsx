@@ -9,12 +9,12 @@ import type { MapSnapshot } from '../types'
 const CENTER: [number, number] = [33.7013, -84.3700]
 
 const SECTION_COLORS: Record<string, string> = {
-  A: '#92400e',
-  B: '#065f46',
-  C: '#1e40af',
-  D: '#7c2d12',
-  E: '#4c1d95',
-  F: '#854d0e',
+  A: '#1B3A1E',
+  B: '#2C4A2E',
+  C: '#3A5E3C',
+  D: '#4A7A4E',
+  E: '#A67C2E',
+  F: '#5A8F5E',
 }
 
 // Section polygons tile the cemetery from north to south. The western boundary
@@ -133,7 +133,7 @@ export default function MapView() {
         <MapSidebar snapshot={snapshot} />
       </div>
 
-      <div className="bg-stone-800 text-stone-100 px-6 py-4 flex items-center gap-6 h-16 shrink-0">
+      <div className="bg-sv-green-900 text-sv-green-100 px-6 py-4 flex items-center gap-6 h-16 shrink-0">
         <span className="text-2xl font-bold tabular-nums shrink-0">{snapshot.year === 1970 ? '1970–Present' : snapshot.year}</span>
         <input
           type="range"
@@ -141,9 +141,9 @@ export default function MapView() {
           max={mapSnapshots.length - 1}
           value={snapshotIndex}
           onChange={(e) => setSnapshotIndex(Number(e.target.value))}
-          className="flex-1 min-w-40 accent-amber-600 cursor-pointer"
+          className="flex-1 min-w-40 accent-sv-gold-500 cursor-pointer"
         />
-        <div className="text-sm text-stone-400 shrink-0 text-right">
+        <div className="text-sm text-sv-green-100/60 shrink-0 text-right">
           {mapSnapshots[0].year} — Present
         </div>
       </div>

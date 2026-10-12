@@ -103,31 +103,31 @@ function DetailPanel({
     : 'Search individuals...'
 
   return (
-    <div className="w-80 bg-white border-l border-stone-200 flex flex-col overflow-hidden shrink-0">
+    <div className="w-80 bg-sv-cream border-l border-sv-border flex flex-col overflow-hidden shrink-0">
       {/* Search */}
-      <div className="p-4 border-b border-stone-200">
+      <div className="p-4 border-b border-sv-border">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-3 py-2 text-sm border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+          className="w-full px-3 py-2 text-sm border border-sv-border rounded-md focus:outline-none focus:ring-2 focus:ring-sv-gold-500 focus:border-sv-gold-500"
         />
         {searchQuery && (searchResults.length > 0 || eventSearchResults.length > 0) && (
           <ul className="mt-2 max-h-56 overflow-y-auto">
             {eventSearchResults.length > 0 && (
               <>
-                <li className="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-stone-400">
+                <li className="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-sv-text-muted">
                   Events
                 </li>
                 {eventSearchResults.map((ev) => (
                   <li key={ev.id}>
                     <button
                       onClick={() => onSelectResult(ev.id)}
-                      className="w-full text-left px-2 py-1.5 text-sm text-stone-700 hover:bg-stone-100 rounded"
+                      className="w-full text-left px-2 py-1.5 text-sm text-sv-text hover:bg-sv-green-50 rounded"
                     >
                       <span className="font-medium">{ev.name}</span>
-                      <span className="text-stone-400 ml-1 text-xs">
+                      <span className="text-sv-text-muted ml-1 text-xs">
                         {ev.year_range[0]}–{ev.year_range[1]}
                       </span>
                     </button>
@@ -138,7 +138,7 @@ function DetailPanel({
             {searchResults.length > 0 && (
               <>
                 {eventSearchResults.length > 0 && (
-                  <li className="px-2 pt-2 py-1 text-xs font-semibold uppercase tracking-wider text-stone-400">
+                  <li className="px-2 pt-2 py-1 text-xs font-semibold uppercase tracking-wider text-sv-text-muted">
                     Individuals
                   </li>
                 )}
@@ -146,10 +146,10 @@ function DetailPanel({
                   <li key={person.id}>
                     <button
                       onClick={() => onSelectResult(person.id)}
-                      className="w-full text-left px-2 py-1.5 text-sm text-stone-700 hover:bg-stone-100 rounded"
+                      className="w-full text-left px-2 py-1.5 text-sm text-sv-text hover:bg-sv-green-50 rounded"
                     >
                       <span className="font-medium">{person.name}</span>
-                      <span className="text-stone-400 ml-1 text-xs">
+                      <span className="text-sv-text-muted ml-1 text-xs">
                         {person.birth}–{person.death}
                       </span>
                     </button>
@@ -160,7 +160,7 @@ function DetailPanel({
           </ul>
         )}
         {searchQuery && searchResults.length === 0 && eventSearchResults.length === 0 && (
-          <p className="mt-2 text-xs text-stone-400 italic">No results found</p>
+          <p className="mt-2 text-xs text-sv-text-muted italic">No results found</p>
         )}
       </div>
 
@@ -173,7 +173,7 @@ function DetailPanel({
             <EventDetail event={selected.data as CemeteryEvent} onClose={onClose} />
           )
         ) : (
-          <div className="flex items-center justify-center h-full text-stone-400 text-sm text-center px-4">
+          <div className="flex items-center justify-center h-full text-sv-text-muted text-sm text-center px-4">
             Click a node on the graph or use the search bar to view details
           </div>
         )}
@@ -201,37 +201,37 @@ function PersonDetail({ person, onClose }: { person: Individual; onClose: () => 
     <div>
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="text-lg font-semibold text-stone-800">{person.name}</h3>
-          <p className="text-xs text-stone-500">
+          <h3 className="text-lg font-semibold text-sv-text">{person.name}</h3>
+          <p className="text-xs text-sv-text-secondary">
             {person.birth}–{person.death} &middot; {person.demographics.occupation}
           </p>
         </div>
-        <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-sm p-1">
+        <button onClick={onClose} className="text-sv-text-muted hover:text-sv-text-secondary text-sm p-1">
           &times;
         </button>
       </div>
 
       {person.notable && (
-        <span className="inline-block text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full mb-3">
+        <span className="inline-block text-xs bg-sv-green-100 text-sv-green-900 px-2 py-0.5 rounded-full mb-3">
           Notable Figure
         </span>
       )}
 
-      <p className="text-sm text-stone-600 leading-relaxed mb-4">{person.bio}</p>
+      <p className="text-sm text-sv-text-secondary leading-relaxed mb-4">{person.bio}</p>
 
-      <div className="text-xs text-stone-500 mb-1">
+      <div className="text-xs text-sv-text-secondary mb-1">
         Section {person.section}, Plot {person.plot}
       </div>
 
       {relatedPeople.length > 0 && (
         <div className="mt-4">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-sv-text-muted mb-2">
             Connections
           </h4>
           <ul className="space-y-1">
             {relatedPeople.map((r) => (
-              <li key={r.target} className="text-sm text-stone-600">
-                <span className="text-stone-400 capitalize">{r.type}:</span> {r.name}
+              <li key={r.target} className="text-sm text-sv-text-secondary">
+                <span className="text-sv-text-muted capitalize">{r.type}:</span> {r.name}
               </li>
             ))}
           </ul>
@@ -240,14 +240,14 @@ function PersonDetail({ person, onClose }: { person: Individual; onClose: () => 
 
       {linkedEvents.length > 0 && (
         <div className="mt-4">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-sv-text-muted mb-2">
             Events
           </h4>
           <ul className="space-y-1">
             {linkedEvents.map((e) => (
-              <li key={e.event_id} className="text-sm text-stone-600">
+              <li key={e.event_id} className="text-sm text-sv-text-secondary">
                 <span className="font-medium">{e.name}</span>
-                <span className="text-stone-400 ml-1">— {e.role}</span>
+                <span className="text-sv-text-muted ml-1">— {e.role}</span>
               </li>
             ))}
           </ul>
@@ -266,30 +266,30 @@ function EventDetail({ event, onClose }: { event: CemeteryEvent; onClose: () => 
     <div>
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="text-lg font-semibold text-stone-800">{event.name}</h3>
-          <p className="text-xs text-stone-500">
+          <h3 className="text-lg font-semibold text-sv-text">{event.name}</h3>
+          <p className="text-xs text-sv-text-secondary">
             {event.year_range[0]}–{event.year_range[1]} &middot; {event.type}
           </p>
         </div>
-        <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-sm p-1">
+        <button onClick={onClose} className="text-sv-text-muted hover:text-sv-text-secondary text-sm p-1">
           &times;
         </button>
       </div>
 
-      <p className="text-sm text-stone-600 leading-relaxed mb-4">{event.description}</p>
+      <p className="text-sm text-sv-text-secondary leading-relaxed mb-4">{event.description}</p>
 
       {linkedPeople.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-sv-text-muted mb-2">
             Connected Individuals
           </h4>
           <ul className="space-y-1">
             {linkedPeople.map((p) => {
               const link = p.events.find((e) => e.event_id === event.id)
               return (
-                <li key={p.id} className="text-sm text-stone-600">
+                <li key={p.id} className="text-sm text-sv-text-secondary">
                   <span className="font-medium">{p.name}</span>
-                  {link && <span className="text-stone-400 ml-1">— {link.role}</span>}
+                  {link && <span className="text-sv-text-muted ml-1">— {link.role}</span>}
                 </li>
               )
             })}
@@ -392,7 +392,7 @@ export default function NetworkGraphView() {
       .selectAll<SVGLineElement, GraphLink>('line')
       .data(links)
       .join('line')
-      .attr('stroke', '#a8a29e')
+      .attr('stroke', '#D9D3CA')
       .attr('stroke-width', 1.5)
       .attr('stroke-dasharray', (d) =>
         d.style === 'dashed' ? '6,4' : d.style === 'dotted' ? '2,4' : 'none'
@@ -405,7 +405,7 @@ export default function NetworkGraphView() {
       .join('text')
       .text((d) => d.label)
       .attr('font-size', 9)
-      .attr('fill', '#78716c')
+      .attr('fill', '#8A8279')
       .attr('text-anchor', 'middle')
       .attr('dy', -4)
 
@@ -447,7 +447,7 @@ export default function NetworkGraphView() {
           .attr('height', 36)
           .attr('rx', 8)
           .attr('fill', 'none')
-          .attr('stroke', '#f59e0b')
+          .attr('stroke', '#C4943D')
           .attr('stroke-width', 3)
           .attr('opacity', 0)
 
@@ -457,8 +457,8 @@ export default function NetworkGraphView() {
           .attr('width', 40)
           .attr('height', 28)
           .attr('rx', 6)
-          .attr('fill', '#92400e')
-          .attr('stroke', '#78350f')
+          .attr('fill', '#A67C2E')
+          .attr('stroke', '#854d0e')
           .attr('stroke-width', 2)
       } else {
         const person = d.data as Individual
@@ -469,14 +469,14 @@ export default function NetworkGraphView() {
           .attr('class', 'node-highlight')
           .attr('r', r + 5)
           .attr('fill', 'none')
-          .attr('stroke', '#f59e0b')
+          .attr('stroke', '#C4943D')
           .attr('stroke-width', 3)
           .attr('opacity', 0)
 
         el.append('circle')
           .attr('r', r)
-          .attr('fill', person.notable ? '#1e40af' : '#57534e')
-          .attr('stroke', person.notable ? '#1e3a8a' : '#44403c')
+          .attr('fill', person.notable ? '#1B3A1E' : '#5A8F5E')
+          .attr('stroke', person.notable ? '#0f2412' : '#3A5E3C')
           .attr('stroke-width', 2)
       }
     })
@@ -493,7 +493,7 @@ export default function NetworkGraphView() {
         if (d.type === 'event') return '600'
         return (d.data as Individual).notable ? '600' : '400'
       })
-      .attr('fill', '#1c1917')
+      .attr('fill', '#2D2A26')
       .attr('text-anchor', 'middle')
       .attr('dy', (d) => d.type === 'event' ? 28 : ((d.data as Individual).notable ? 26 : 22))
 
@@ -533,14 +533,14 @@ export default function NetworkGraphView() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-stone-100 border-b border-stone-200 px-6 py-3 flex items-center gap-4">
-        <span className="text-sm font-medium text-stone-600">View:</span>
+      <div className="bg-sv-green-50 border-b border-sv-border px-6 py-3 flex items-center gap-4">
+        <span className="text-sm font-medium text-sv-text-secondary">View:</span>
         <button
           onClick={() => setMode('relations')}
           className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
             mode === 'relations'
-              ? 'bg-stone-800 text-white'
-              : 'bg-white text-stone-600 border border-stone-300 hover:bg-stone-50'
+              ? 'bg-sv-green-900 text-white'
+              : 'bg-sv-cream text-sv-text-secondary border border-sv-border hover:bg-sv-green-100'
           }`}
         >
           Relations
@@ -549,29 +549,29 @@ export default function NetworkGraphView() {
           onClick={() => setMode('events')}
           className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
             mode === 'events'
-              ? 'bg-stone-800 text-white'
-              : 'bg-white text-stone-600 border border-stone-300 hover:bg-stone-50'
+              ? 'bg-sv-green-900 text-white'
+              : 'bg-sv-cream text-sv-text-secondary border border-sv-border hover:bg-sv-green-100'
           }`}
         >
           Events
         </button>
-        <div className="ml-auto flex items-center gap-4 text-xs text-stone-400">
+        <div className="ml-auto flex items-center gap-4 text-xs text-sv-text-muted">
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded-full bg-blue-800" /> Notable
+            <span className="inline-block w-3 h-3 rounded-full bg-sv-green-900" /> Notable
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded-full bg-stone-600" /> Individual
+            <span className="inline-block w-3 h-3 rounded-full bg-sv-green-500" /> Individual
           </span>
           {mode === 'events' && (
             <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-2 rounded-sm bg-amber-800" /> Event
+              <span className="inline-block w-3 h-2 rounded-sm bg-sv-gold-600" /> Event
             </span>
           )}
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 relative bg-stone-50">
+        <div className="flex-1 relative bg-sv-cream">
           <svg ref={svgRef} className="w-full h-full" />
         </div>
         <DetailPanel
