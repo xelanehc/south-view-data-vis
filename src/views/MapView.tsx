@@ -87,10 +87,7 @@ function SectionOverlays({ snapshot }: { snapshot: MapSnapshot }) {
     map.flyToBounds([[minLat, minLng], [maxLat, maxLng]], { duration: 0.8, padding: [40, 40] })
   }, [snapshot, map])
 
-  // Keep every section mounted and hide inactive ones via style. Adding a
-  // polygon while flyToBounds is animating projects it at the mid-flight zoom
-  // inside an SVG container still scaled for the previous zoom, so it renders
-  // offset until the next moveend.
+  // put all polygons in right away instead of waiting for active render
   return (
     <>
       {Object.entries(SECTION_POLYGONS).map(([section, poly]) => {
