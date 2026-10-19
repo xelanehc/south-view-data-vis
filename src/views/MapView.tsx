@@ -87,11 +87,14 @@ function SectionOverlays({ snapshot }: { snapshot: MapSnapshot }) {
     map.flyToBounds([[minLat, minLng], [maxLat, maxLng]], { duration: 0.8, padding: [40, 40] })
   }, [snapshot, map])
 
+  // Keep every section mounted and hide inactive ones via style. Adding a
+  // polygon while flyToBounds is animating projects it at the mid-flight zoom
+  // inside an SVG container still scaled for the previous zoom, so it renders
+  // offset until the next moveend.
   return (
     <>
-      {snapshot.sections_active.map((section) => {
-        const poly = SECTION_POLYGONS[section]
-        if (!poly) return null
+      {Object.entries(SECTION_POLYGONS).map(([section, poly]) => {
+        const active = snapshot.sections_active.includes(section)
         return (
           <Polygon
             key={section}
@@ -99,7 +102,8 @@ function SectionOverlays({ snapshot }: { snapshot: MapSnapshot }) {
             pathOptions={{
               color: SECTION_COLORS[section] || '#78716c',
               fillColor: SECTION_COLORS[section] || '#a8a29e',
-              fillOpacity: 0.25,
+              opacity: active ? 1 : 0,
+              fillOpacity: active ? 0.25 : 0,
               weight: 2,
             }}
           />
