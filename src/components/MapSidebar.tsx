@@ -64,7 +64,6 @@ export default function MapSidebar({ snapshot, label }: { snapshot: MapSnapshot;
   const { gender, avg_age_at_death, cemetery_acreage, historical_context } = snapshot.demographics
   const total = gender.Male + gender.Female
   const malePct = Math.round((gender.Male / total) * 100)
-  const sectionCount = snapshot.sections_active.length
 
   return (
     <aside className="flex w-96 shrink-0 flex-col border-l bg-background">
@@ -82,9 +81,6 @@ export default function MapSidebar({ snapshot, label }: { snapshot: MapSnapshot;
             <CardContent className="grid grid-cols-2 gap-x-4 gap-y-5">
               <div className="col-span-2">
                 <Stat label="Total burials" value={snapshot.total_burials.toLocaleString()} />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Across {sectionCount} section{sectionCount > 1 ? 's' : ''} ({snapshot.sections_active.join(', ')})
-                </p>
               </div>
               <Stat label="Avg. age at death" value={avg_age_at_death} suffix="yrs" />
               <Stat label="Cemetery size" value={cemetery_acreage} suffix="acres" />

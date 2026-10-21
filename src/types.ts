@@ -47,10 +47,10 @@ export interface SnapshotDemographics {
 export interface MapSnapshot {
   year: number
   total_burials: number
-  sections_active: string[]
   notable_figures: string[]
   demographics: SnapshotDemographics
-  bounds: [[number, number], [number, number]]
+  /** Developed extent of the cemetery at this date, as [lat, lng] vertices (ring not closed) */
+  footprint: [number, number][]
 }
 
 export type SupporterCategory =
