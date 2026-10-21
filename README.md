@@ -10,7 +10,8 @@ An interactive data visualization tool for exploring the history and community o
 |-------|-----------|---------|
 | Framework | **React 19** + **TypeScript 6** | Component architecture and type safety |
 | Build Tool | **Vite 8** | Dev server with HMR, production bundling |
-| Styling | **Tailwind CSS 4** (via `@tailwindcss/vite`) | Utility-first CSS with custom theme tokens |
+| Styling | **Tailwind CSS 4** (via `@tailwindcss/vite`) | Utility-first CSS driven by shadcn theme tokens |
+| UI components | **shadcn/ui** (Radix, Vega style, neutral base) + **lucide-react** | Accessible components in `src/components/ui`; theme lives in `src/index.css` |
 | Map | **Leaflet 1.9** + **react-leaflet 5** | Interactive tiled map with polygon overlays |
 | Graph | **D3.js 7** | Force-directed network graph with zoom/drag |
 | Routing | **React Router 7** | Client-side tab navigation (Map / Network Graph) |
@@ -24,7 +25,7 @@ An interactive data visualization tool for exploring the history and community o
 src/
 ├── App.tsx                  # Root layout: header with logo/nav, route outlet
 ├── main.tsx                 # React DOM entry point, BrowserRouter wrapper
-├── index.css                # Tailwind import + @theme custom color tokens
+├── index.css                # Tailwind + shadcn theme tokens (light/dark) + Leaflet overrides
 ├── types.ts                 # TypeScript interfaces for all data models
 ├── assets/
 │   └── southviewlogo.avif   # South-View Preservation Foundation logo
@@ -36,8 +37,13 @@ src/
 ├── views/
 │   ├── MapView.tsx          # Leaflet map + time slider + section polygons
 │   └── NetworkGraphView.tsx # D3 force graph + detail panel + search
+├── lib/                     # cn() helper and shared formatters
 └── components/
-    └── MapSidebar.tsx       # Sidebar with demographics, context, notable figures
+    ├── ui/                  # shadcn components (add more with `npx shadcn add <name>`)
+    ├── AboutDialog.tsx      # Project intro dialog
+    ├── MapSidebar.tsx       # Sidebar with demographics, context, notable figures
+    ├── NetworkGraph.tsx     # D3 force graph canvas (zoom controls, hover, selection)
+    └── NetworkPanel.tsx     # Graph search + person/event detail panel
 ```
 
 ### Data Layer

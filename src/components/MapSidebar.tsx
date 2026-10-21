@@ -1,124 +1,173 @@
+import { ArrowRightIcon, UserIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { individuals } from '../data'
-import type { Individual, MapSnapshot } from '../types'
+import { Link } from 'react-router-dom'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { individuals } from '@/data'
+import type { Individual, MapSnapshot } from '@/types'
 
-function NotableFigureCard({ person, onClose }: { person: Individual; onClose: () => void }) {
+function Stat({ label, value, suffix }: { label: string; value: string | number; suffix?: string }) {
   return (
-    <div className="bg-sv-green-50 border border-sv-border rounded-lg p-3 text-sm">
-      <div className="flex justify-between items-start mb-1">
-        <span className="font-semibold text-sv-text">{person.name}</span>
-        <button onClick={onClose} className="text-sv-text-muted hover:text-sv-text-secondary text-xs ml-2">
-          close
-        </button>
-      </div>
-      <div className="text-sv-text-secondary text-xs mb-1">
-        {person.birth}–{person.death} &middot; {person.demographics.occupation}
-      </div>
-      <p className="text-sv-text-secondary leading-snug">{person.bio}</p>
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-xl font-semibold tabular-nums tracking-tight">
+        {value}
+        {suffix && <span className="ml-1 text-sm font-normal text-muted-foreground">{suffix}</span>}
+      </p>
     </div>
   )
 }
 
-export default function MapSidebar({ snapshot }: { snapshot: MapSnapshot }) {
-  const [selectedPerson, setSelectedPerson] = useState<Individual | null>(null)
+function FigureDialog({ person, onClose }: { person: Individual | null; onClose: () => void }) {
+  return (
+    <Dialog open={person !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        {person && (
+          <>
+            <DialogHeader>
+              <DialogTitle>{person.name}</DialogTitle>
+              <DialogDescription>
+                {person.birth}–{person.death} · {person.demographics.occupation}
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-sm leading-relaxed text-muted-foreground">{person.bio}</p>
+            <p className="text-xs text-muted-foreground">
+              Section {person.section}, Plot {person.plot}
+            </p>
+            <DialogFooter>
+              <Button asChild variant="outline">
+                <Link to={`/network?select=${person.id}`}>
+                  View in network
+                  <ArrowRightIcon />
+                </Link>
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
 
-  const notables = useMemo(() => {
-    return snapshot.notable_figures
-      .map((id) => individuals.find((p) => p.id === id))
-      .filter((p): p is Individual => p !== undefined)
-  }, [snapshot])
+export default function MapSidebar({ snapshot, label }: { snapshot: MapSnapshot; label: string }) {
+  const [selected, setSelected] = useState<Individual | null>(null)
 
-  // Filter to only show notables who are actually dead by this snapshot year
-  const visibleNotables = useMemo(() => {
-    return notables.filter((p) => p.death <= snapshot.year)
-  }, [notables, snapshot.year])
+  // Only show notables who are already buried by this snapshot year
+  const notables = useMemo(
+    () =>
+      snapshot.notable_figures
+        .map((id) => individuals.find((p) => p.id === id))
+        .filter((p): p is Individual => p !== undefined && p.death <= snapshot.year),
+    [snapshot],
+  )
 
   const { gender, avg_age_at_death, cemetery_acreage, historical_context } = snapshot.demographics
   const total = gender.Male + gender.Female
   const malePct = Math.round((gender.Male / total) * 100)
+  const sectionCount = snapshot.sections_active.length
 
   return (
-    <div className="w-80 bg-sv-cream border-l border-sv-border flex flex-col overflow-y-auto">
-      <div className="p-5 border-b border-sv-border">
-        <h2 className="text-3xl font-bold text-sv-text tabular-nums">{snapshot.year === 1970 ? '1970–Present' : snapshot.year}</h2>
-        <p className="text-sm text-sv-text-secondary mt-1">Cemetery snapshot</p>
-      </div>
-
-      <div className="p-5 border-b border-sv-border">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-sv-text-muted mb-2">
-          Total Burials
-        </h3>
-        <p className="text-2xl font-bold text-sv-text tabular-nums">
-          {snapshot.total_burials.toLocaleString()}
-        </p>
-        <p className="text-xs text-sv-text-secondary mt-1">
-          Across {snapshot.sections_active.length} section{snapshot.sections_active.length > 1 ? 's' : ''} ({snapshot.sections_active.join(', ')})
-        </p>
-      </div>
-
-      <div className="p-5 border-b border-sv-border">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-sv-text-muted mb-3">
-          Demographics
-        </h3>
-        <div className="mb-2">
-          <div className="flex justify-between text-xs text-sv-text-secondary mb-1">
-            <span>Male {malePct}%</span>
-            <span>Female {100 - malePct}%</span>
+    <aside className="flex w-96 shrink-0 flex-col border-l bg-background">
+      <ScrollArea className="min-h-0 flex-1">
+        <div
+          key={snapshot.year}
+          className="animate-in fade-in-0 slide-in-from-right-2 space-y-4 p-4 duration-300"
+        >
+          <div className="px-1 pt-1">
+            <h2 className="text-3xl font-semibold tabular-nums tracking-tight">{label}</h2>
+            <p className="text-sm text-muted-foreground">Cemetery snapshot</p>
           </div>
-          <div className="h-3 bg-sv-cream-dark rounded-full overflow-hidden flex">
-            <div
-              className="bg-sv-green-700 transition-all duration-500"
-              style={{ width: `${malePct}%` }}
-            />
-            <div className="bg-sv-gold-500 flex-1 transition-all duration-500" />
-          </div>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-xs text-sv-text-secondary">Avg. age at death</p>
-            <p className="text-lg font-semibold text-sv-text tabular-nums">{avg_age_at_death}</p>
-          </div>
-          <div>
-            <p className="text-xs text-sv-text-secondary">Cemetery acreage</p>
-            <p className="text-lg font-semibold text-sv-text tabular-nums">{cemetery_acreage} acres</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="p-5 border-b border-sv-border">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-sv-text-muted mb-2">
-          Historical Context
-        </h3>
-        <p className="text-sm text-sv-text-secondary leading-relaxed">{historical_context}</p>
-      </div>
+          <Card>
+            <CardContent className="grid grid-cols-2 gap-x-4 gap-y-5">
+              <div className="col-span-2">
+                <Stat label="Total burials" value={snapshot.total_burials.toLocaleString()} />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Across {sectionCount} section{sectionCount > 1 ? 's' : ''} ({snapshot.sections_active.join(', ')})
+                </p>
+              </div>
+              <Stat label="Avg. age at death" value={avg_age_at_death} suffix="yrs" />
+              <Stat label="Cemetery size" value={cemetery_acreage} suffix="acres" />
+            </CardContent>
+          </Card>
 
-      <div className="p-5 flex-1">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-sv-text-muted mb-3">
-          Notable Figures
-        </h3>
-        {selectedPerson ? (
-          <NotableFigureCard person={selectedPerson} onClose={() => setSelectedPerson(null)} />
-        ) : (
-          <ul className="space-y-1">
-            {visibleNotables.map((person) => (
-              <li key={person.id}>
-                <button
-                  onClick={() => setSelectedPerson(person)}
-                  className="text-sm text-sv-text hover:text-sv-gold-600 hover:underline text-left w-full"
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Gender</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div
+                className="flex h-2.5 overflow-hidden rounded-full bg-muted"
+                role="img"
+                aria-label={`${malePct}% male, ${100 - malePct}% female`}
+              >
+                <div className="bg-chart-1 transition-all duration-500" style={{ width: `${malePct}%` }} />
+                <div className="flex-1 bg-chart-3 transition-all duration-500" />
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-chart-1" />
+                  Male {malePct}%
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-chart-3" />
+                  Female {100 - malePct}%
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Historical context</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm leading-relaxed text-muted-foreground">{historical_context}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Notable figures</CardTitle>
+              <CardDescription>Select a name to read their story.</CardDescription>
+            </CardHeader>
+            <CardContent className="gap-1">
+              {notables.map((person) => (
+                <Button
+                  key={person.id}
+                  variant="ghost"
+                  className="h-auto w-full justify-start gap-3 px-2 py-2 text-left"
+                  onClick={() => setSelected(person)}
                 >
-                  {person.name}
-                  <span className="text-sv-text-muted ml-1 text-xs">
-                    ({person.birth}–{person.death})
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <UserIcon className="size-4" />
                   </span>
-                </button>
-              </li>
-            ))}
-            {visibleNotables.length === 0 && (
-              <li className="text-sm text-sv-text-muted italic">None yet in this period</li>
-            )}
-          </ul>
-        )}
-      </div>
-    </div>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium">{person.name}</span>
+                    <span className="block truncate text-xs font-normal text-muted-foreground">
+                      {person.birth}–{person.death} · {person.demographics.occupation}
+                    </span>
+                  </span>
+                </Button>
+              ))}
+              {notables.length === 0 && (
+                <Badge variant="secondary" className="w-fit">None yet in this period</Badge>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </ScrollArea>
+      <FigureDialog person={selected} onClose={() => setSelected(null)} />
+    </aside>
   )
 }
