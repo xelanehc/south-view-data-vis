@@ -14,7 +14,9 @@ import { cn } from '@/lib/utils'
 import type { MapSnapshot } from '@/types'
 
 const CENTER: [number, number] = [33.7013, -84.3700]
-const PLAY_INTERVAL_MS = 2200
+const PLAY_INTERVAL_MS = 1467
+// Pause after the map first appears before the timeline starts playing on its own
+const AUTOPLAY_DELAY_MS = 1000
 const LAST = mapSnapshots.length - 1
 
 // Full class strings so Tailwind can see them. Colors come from the theme's chart tokens.
@@ -218,6 +220,9 @@ export default function MapView() {
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [tilesReady, setTilesReady] = useState(false)
+  const [autoplayPending, setAutoplayPending] = useState(true)
+  // Set when the user presses play so the first step comes quickly as feedback
+  const quickStepRef = useRef(false)
   const snapshot = mapSnapshots[index]
 
   // Don't leave the skeleton up forever if tiles can't load (offline demo)
@@ -226,16 +231,30 @@ export default function MapView() {
     return () => clearTimeout(t)
   }, [])
 
+  // Start playing once the map is visible, unless the user has already taken over
+  useEffect(() => {
+    if (!tilesReady || !autoplayPending) return
+    const t = setTimeout(() => {
+      setAutoplayPending(false)
+      setPlaying(true)
+    }, AUTOPLAY_DELAY_MS)
+    return () => clearTimeout(t)
+  }, [tilesReady, autoplayPending])
+
   useEffect(() => {
     if (!playing) return
+    const delay = quickStepRef.current ? PLAY_INTERVAL_MS / 2 : PLAY_INTERVAL_MS
     const t = setTimeout(() => {
+      quickStepRef.current = false
       if (index >= LAST) setPlaying(false)
       else setIndex(index + 1)
-    }, PLAY_INTERVAL_MS)
+    }, delay)
     return () => clearTimeout(t)
   }, [playing, index])
 
   const togglePlay = useCallback(() => {
+    setAutoplayPending(false)
+    quickStepRef.current = !playing
     if (!playing && index >= LAST) setIndex(0)
     setPlaying((p) => !p)
   }, [playing, index])
@@ -266,6 +285,7 @@ export default function MapView() {
         <Timeline
           index={index}
           onChange={(i) => {
+            setAutoplayPending(false)
             setPlaying(false)
             setIndex(i)
           }}
