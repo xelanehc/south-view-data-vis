@@ -1,6 +1,5 @@
-import { ArrowRightIcon, UserIcon } from 'lucide-react'
+import { UserIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,7 +7,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -44,14 +42,6 @@ function FigureDialog({ person, onClose }: { person: Individual | null; onClose:
             <p className="text-xs text-muted-foreground">
               Section {person.section}, Plot {person.plot}
             </p>
-            <DialogFooter>
-              <Button asChild variant="outline">
-                <Link to={`/network?select=${person.id}`}>
-                  View in network
-                  <ArrowRightIcon />
-                </Link>
-              </Button>
-            </DialogFooter>
           </>
         )}
       </DialogContent>

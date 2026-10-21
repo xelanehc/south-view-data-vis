@@ -1,6 +1,5 @@
-import { MousePointerClickIcon, XIcon } from 'lucide-react'
+import { BadgeCheckIcon, ExternalLinkIcon, XIcon } from 'lucide-react'
 import { useMemo, useState, type RefObject } from 'react'
-import type { GraphMode } from '@/components/NetworkGraph'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,18 +13,19 @@ import {
 } from '@/components/ui/command'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { events, individuals } from '@/data'
-import { yearRange } from '@/lib/format'
-import type { CemeteryEvent, Individual } from '@/types'
+import { supporters } from '@/data'
+import { CATEGORIES, CATEGORY_STYLES, formatUSD, givingYears, totalGiving } from '@/lib/supporters'
+import { cn } from '@/lib/utils'
+import type { Supporter } from '@/types'
 
 const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform)
 
+const byTotal = [...supporters].sort((a, b) => totalGiving(b) - totalGiving(a))
+
 function Search({
-  mode,
   inputRef,
   onSelect,
 }: {
-  mode: GraphMode
   inputRef: RefObject<HTMLInputElement | null>
   onSelect: (id: string) => void
 }) {
@@ -49,34 +49,17 @@ function Search({
           onFocus={() => setFocused(true)}
           // Let item clicks land before the list unmounts
           onBlur={() => setTimeout(() => setFocused(false), 120)}
-          placeholder={mode === 'events' ? 'Search people or events…' : 'Search people…'}
+          placeholder="Search sponsors and donors…"
         />
         {open && (
           <CommandList className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 rounded-lg border bg-popover shadow-md">
             <CommandEmpty>No results found.</CommandEmpty>
-            {mode === 'events' && (
-              <CommandGroup heading="Events">
-                {events.map((ev) => (
-                  <CommandItem key={ev.id} value={`${ev.name} ${ev.type}`} onSelect={() => pick(ev.id)}>
-                    <span className="truncate">{ev.name}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {yearRange(ev.year_range)}
-                    </span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-            <CommandGroup heading="People">
-              {individuals.map((p) => (
-                <CommandItem
-                  key={p.id}
-                  value={`${p.name} ${p.demographics.occupation}`}
-                  onSelect={() => pick(p.id)}
-                >
-                  <span className="truncate">{p.name}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    {p.birth}–{p.death}
-                  </span>
+            <CommandGroup heading="Supporters">
+              {supporters.map((s) => (
+                <CommandItem key={s.id} value={`${s.name} ${s.category} ${s.relationship}`} onSelect={() => pick(s.id)}>
+                  <span className={cn('size-2 shrink-0 rounded-full', CATEGORY_STYLES[s.category].bg)} />
+                  <span className="truncate">{s.name}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{s.category}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -90,59 +73,30 @@ function Search({
   )
 }
 
-function LinkRow({
-  label,
-  detail,
-  onClick,
-}: {
-  label: string
-  detail: string
-  onClick?: () => void
-}) {
-  const content = (
-    <>
-      <span className="truncate text-sm font-medium">{label}</span>
-      <Badge variant="secondary" className="ml-auto shrink-0 capitalize">
-        {detail}
-      </Badge>
-    </>
-  )
-  if (!onClick) return <li className="flex items-center gap-2 px-2 py-1.5">{content}</li>
-  return (
-    <li>
-      <Button variant="ghost" className="h-auto w-full justify-start gap-2 px-2 py-1.5" onClick={onClick}>
-        {content}
-      </Button>
-    </li>
+function SourceBadge({ verified }: { verified: boolean }) {
+  return verified ? (
+    <Badge className="w-fit">
+      <BadgeCheckIcon />
+      Verified
+    </Badge>
+  ) : (
+    <Badge variant="outline" className="w-fit text-muted-foreground">
+      Sample data
+    </Badge>
   )
 }
 
-function PersonDetail({
-  person,
-  mode,
-  onSelect,
-  onClose,
-}: {
-  person: Individual
-  mode: GraphMode
-  onSelect: (id: string) => void
-  onClose: () => void
-}) {
-  const related = person.relations.flatMap((r) => {
-    const target = individuals.find((p) => p.id === r.target)
-    return target ? [{ ...r, name: target.name }] : []
-  })
-  const linkedEvents = person.events.flatMap((e) => {
-    const ev = events.find((x) => x.id === e.event_id)
-    return ev ? [{ ...e, name: ev.name }] : []
-  })
+function SupporterDetail({ supporter, onClose }: { supporter: Supporter; onClose: () => void }) {
+  const total = totalGiving(supporter)
+  const contributions = [...supporter.contributions].sort((a, b) => b.year - a.year)
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{person.name}</CardTitle>
-        <CardDescription>
-          {person.birth}–{person.death} · {person.demographics.occupation}
+        <CardTitle className="text-lg">{supporter.name}</CardTitle>
+        <CardDescription className="flex items-center gap-1.5">
+          <span className={cn('size-2 rounded-full', CATEGORY_STYLES[supporter.category].bg)} />
+          {supporter.category} · {supporter.relationship === 'sponsor' ? 'Sponsor' : 'Donor'}
         </CardDescription>
         <CardAction>
           <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close details">
@@ -151,40 +105,56 @@ function PersonDetail({
         </CardAction>
       </CardHeader>
       <CardContent>
-        {person.notable && <Badge className="w-fit">Notable figure</Badge>}
-        <p className="text-sm leading-relaxed text-muted-foreground">{person.bio}</p>
-        <p className="text-xs text-muted-foreground">
-          Section {person.section}, Plot {person.plot}
-        </p>
+        <SourceBadge verified={supporter.verified} />
+        <p className="text-sm leading-relaxed text-muted-foreground">{supporter.description}</p>
 
-        {related.length > 0 && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Total given</p>
+            <p className="text-xl font-semibold tabular-nums tracking-tight">
+              {total > 0 ? formatUSD(total) : 'In-kind'}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Supporting since</p>
+            <p className="text-xl font-semibold tabular-nums tracking-tight">
+              {Math.min(...supporter.contributions.map((c) => c.year))}
+            </p>
+          </div>
+        </div>
+
+        <Separator />
+        <div>
+          <h4 className="mb-2 text-xs font-medium text-muted-foreground">Contributions</h4>
+          <ul className="space-y-3">
+            {contributions.map((c, i) => (
+              <li key={i} className="flex gap-3 text-sm">
+                <span className="w-10 shrink-0 tabular-nums text-muted-foreground">{c.year}</span>
+                <span className="min-w-0 flex-1">{c.purpose}</span>
+                <span className="shrink-0 font-medium tabular-nums">{formatUSD(c.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {supporter.sources && supporter.sources.length > 0 && (
           <>
             <Separator />
             <div>
-              <h4 className="mb-1 text-xs font-medium text-muted-foreground">Connections</h4>
+              <h4 className="mb-1 text-xs font-medium text-muted-foreground">Sources</h4>
               <ul>
-                {related.map((r) => (
-                  <LinkRow key={r.target} label={r.name} detail={r.type} onClick={() => onSelect(r.target)} />
-                ))}
-              </ul>
-            </div>
-          </>
-        )}
-
-        {linkedEvents.length > 0 && (
-          <>
-            <Separator />
-            <div>
-              <h4 className="mb-1 text-xs font-medium text-muted-foreground">Events</h4>
-              <ul>
-                {linkedEvents.map((e) => (
-                  <LinkRow
-                    key={e.event_id}
-                    label={e.name}
-                    detail={e.role}
-                    // Event nodes only exist in the Events view
-                    onClick={mode === 'events' ? () => onSelect(e.event_id) : undefined}
-                  />
+                {supporter.sources.map((src) => (
+                  <li key={src.url}>
+                    <a
+                      href={src.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
+                    >
+                      {src.label}
+                      <ExternalLinkIcon className="size-3.5 text-muted-foreground" />
+                    </a>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -195,101 +165,100 @@ function PersonDetail({
   )
 }
 
-function EventDetail({
-  event,
-  onSelect,
-  onClose,
-}: {
-  event: CemeteryEvent
-  onSelect: (id: string) => void
-  onClose: () => void
-}) {
-  const people = individuals.flatMap((p) => {
-    const link = p.events.find((e) => e.event_id === event.id)
-    return link ? [{ person: p, role: link.role }] : []
-  })
+function CemeteryOverview({ onSelect }: { onSelect: (id: string) => void }) {
+  const total = supporters.reduce((sum, s) => sum + totalGiving(s), 0)
+  const verified = supporters.filter((s) => s.verified).length
+  const counts = CATEGORIES.map((c) => ({ category: c, count: supporters.filter((s) => s.category === c).length }))
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{event.name}</CardTitle>
-        <CardDescription>
-          {yearRange(event.year_range)} · {event.type}
-        </CardDescription>
-        <CardAction>
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close details">
-            <XIcon />
-          </Button>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm leading-relaxed text-muted-foreground">{event.description}</p>
-        {people.length > 0 && (
-          <>
-            <Separator />
-            <div>
-              <h4 className="mb-1 text-xs font-medium text-muted-foreground">Connected people</h4>
-              <ul>
-                {people.map(({ person, role }) => (
-                  <LinkRow key={person.id} label={person.name} detail={role} onClick={() => onSelect(person.id)} />
-                ))}
-              </ul>
+    <div className="space-y-4">
+      <div className="px-1 pt-1">
+        <h2 className="text-2xl font-semibold tracking-tight">South-View Cemetery</h2>
+        <p className="text-sm text-muted-foreground">Sponsors and donors</p>
+      </div>
+
+      <Card>
+        <CardContent className="grid grid-cols-2 gap-x-4 gap-y-5">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Supporters</p>
+            <p className="text-xl font-semibold tabular-nums tracking-tight">{supporters.length}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Recorded giving</p>
+            <p className="text-xl font-semibold tabular-nums tracking-tight">{formatUSD(total)}</p>
+          </div>
+          <p className="col-span-2 text-xs text-muted-foreground">
+            {verified} verified from public sources; the rest are sample data for the demo.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">By type</CardTitle>
+        </CardHeader>
+        <CardContent className="gap-2">
+          {counts.map(({ category, count }) => (
+            <div key={category} className="flex items-center gap-2 text-sm">
+              <span className={cn('size-2.5 rounded-full', CATEGORY_STYLES[category].bg)} />
+              <span>{category}</span>
+              <span className="ml-auto tabular-nums text-muted-foreground">{count}</span>
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">All supporters</CardTitle>
+          <CardDescription>Sorted by total given.</CardDescription>
+        </CardHeader>
+        <CardContent className="gap-0">
+          {byTotal.map((s) => (
+            <Button
+              key={s.id}
+              variant="ghost"
+              className="h-auto w-full justify-start gap-2 px-2 py-1.5"
+              onClick={() => onSelect(s.id)}
+            >
+              <span className={cn('size-2 shrink-0 rounded-full', CATEGORY_STYLES[s.category].bg)} />
+              <span className="truncate text-sm font-medium">{s.name}</span>
+              {s.verified && <BadgeCheckIcon className="size-3.5 shrink-0" aria-label="Verified" />}
+              <span className="ml-auto shrink-0 pl-2 text-xs font-normal tabular-nums text-muted-foreground">
+                {totalGiving(s) > 0 ? formatUSD(totalGiving(s)) : 'In-kind'} · {givingYears(s)}
+              </span>
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 
 export default function NetworkPanel({
-  mode,
   selectedId,
   searchRef,
   onSelect,
   onClose,
 }: {
-  mode: GraphMode
   selectedId: string | null
   searchRef: RefObject<HTMLInputElement | null>
   onSelect: (id: string) => void
   onClose: () => void
 }) {
-  const detail = useMemo(() => {
-    if (!selectedId) return null
-    const person = individuals.find((p) => p.id === selectedId)
-    if (person) return { kind: 'person' as const, person }
-    const event = events.find((e) => e.id === selectedId)
-    return event ? { kind: 'event' as const, event } : null
-  }, [selectedId])
+  const supporter = useMemo(() => supporters.find((s) => s.id === selectedId) ?? null, [selectedId])
 
   return (
     <aside className="flex w-96 shrink-0 flex-col border-l bg-background">
       <div className="border-b p-4">
-        <Search mode={mode} inputRef={searchRef} onSelect={onSelect} />
+        <Search inputRef={searchRef} onSelect={onSelect} />
       </div>
       <ScrollArea className="min-h-0 flex-1">
-        <div className="p-4">
-          {detail ? (
-            <div key={selectedId} className="animate-in fade-in-0 slide-in-from-right-2 duration-200">
-              {detail.kind === 'person' ? (
-                <PersonDetail person={detail.person} mode={mode} onSelect={onSelect} onClose={onClose} />
-              ) : (
-                <EventDetail event={detail.event} onSelect={onSelect} onClose={onClose} />
-              )}
-            </div>
+        <div key={supporter?.id ?? 'overview'} className="animate-in fade-in-0 slide-in-from-right-2 p-4 duration-200">
+          {supporter ? (
+            <SupporterDetail supporter={supporter} onClose={onClose} />
           ) : (
-            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-              <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                <MousePointerClickIcon className="size-5" />
-              </span>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Nothing selected</p>
-                <p className="text-sm text-muted-foreground">
-                  Click a node on the graph or search for someone to see their story and connections.
-                </p>
-              </div>
-            </div>
+            <CemeteryOverview onSelect={onSelect} />
           )}
         </div>
       </ScrollArea>

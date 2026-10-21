@@ -52,3 +52,35 @@ export interface MapSnapshot {
   demographics: SnapshotDemographics
   bounds: [[number, number], [number, number]]
 }
+
+export type SupporterCategory =
+  | 'Government'
+  | 'Nonprofit'
+  | 'Foundation'
+  | 'Corporate'
+  | 'Faith community'
+  | 'Individual'
+
+export interface Contribution {
+  year: number
+  /** USD; null for in-kind or unreported support */
+  amount: number | null
+  purpose: string
+}
+
+export interface Source {
+  label: string
+  url: string
+}
+
+export interface Supporter {
+  id: string
+  name: string
+  category: SupporterCategory
+  relationship: 'donor' | 'sponsor'
+  description: string
+  contributions: Contribution[]
+  /** true only when the support is confirmed by a public source listed in `sources` */
+  verified: boolean
+  sources?: Source[]
+}

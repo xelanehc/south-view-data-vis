@@ -2,80 +2,87 @@ import * as d3 from 'd3'
 import { MaximizeIcon, MinusIcon, PlusIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { events, individuals } from '@/data'
-import { yearRange } from '@/lib/format'
-import type { CemeteryEvent, Individual } from '@/types'
-
-export type GraphMode = 'relations' | 'events'
+import { supporters } from '@/data'
+import { CATEGORIES, CATEGORY_STYLES, CEMETERY_ID, formatUSD, totalGiving } from '@/lib/supporters'
+import type { Supporter } from '@/types'
 
 export interface Selection {
   id: string
-  /** Pan/zoom the graph to the node (used when selecting from search or detail links) */
+  /** Pan/zoom the graph to the node (used when selecting from search or the detail panel) */
   recenter: boolean
 }
 
-interface PersonNode extends d3.SimulationNodeDatum {
+interface HubNode extends d3.SimulationNodeDatum {
   id: string
-  type: 'person'
-  data: Individual
+  type: 'hub'
+  name: string
 }
 
-interface EventNode extends d3.SimulationNodeDatum {
+interface SupporterNode extends d3.SimulationNodeDatum {
   id: string
-  type: 'event'
-  data: CemeteryEvent
+  type: 'supporter'
+  name: string
+  data: Supporter
+  total: number
+  /** Resting position on the rings; nodes spring back here after a drag */
+  homeX: number
+  homeY: number
+  angle: number
+  ring: number
 }
 
-type GraphNode = PersonNode | EventNode
+type GraphNode = HubNode | SupporterNode
 
 interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
   label: string
-  style: 'solid' | 'dashed' | 'dotted'
+  dashed: boolean
 }
 
-const FIT_PADDING = 70
-const PREWARM_TICKS = 220
+const FIT_PADDING = 40
+const PREWARM_TICKS = 200
+const HUB_RADIUS = 30
+// Alternating rings keep neighbouring labels apart; the ellipse uses the canvas's extra width
+const RINGS = [170, 255]
+const X_STRETCH = 1.2
+const Y_STRETCH = 1.2
 
-function buildGraph(mode: GraphMode): { nodes: GraphNode[]; links: GraphLink[] } {
-  const nodes: GraphNode[] = individuals.map((p) => ({ id: p.id, type: 'person', data: p }))
+function buildGraph(): { nodes: GraphNode[]; links: GraphLink[] } {
+  // The cemetery is pinned at the centre; every supporter links to it
+  const hub: HubNode = { id: CEMETERY_ID, type: 'hub', name: 'South-View Cemetery', fx: 0, fy: 0 }
+  const nodes: GraphNode[] = [hub]
   const links: GraphLink[] = []
 
-  if (mode === 'relations') {
-    const seen = new Set<string>()
-    for (const person of individuals) {
-      for (const rel of person.relations) {
-        const key = [person.id, rel.target].sort().join('-')
-        if (seen.has(key)) continue
-        seen.add(key)
-        links.push({
-          source: person.id,
-          target: rel.target,
-          label: rel.type,
-          style: rel.type === 'spouse' ? 'solid' : rel.type === 'friend' ? 'dashed' : 'dotted',
-        })
-      }
-    }
-  } else {
-    for (const e of events) nodes.push({ id: e.id, type: 'event', data: e })
-    for (const person of individuals) {
-      for (const ev of person.events) {
-        links.push({ source: person.id, target: ev.event_id, label: ev.role, style: 'solid' })
-      }
-    }
-  }
-
+  // Group by type so colours cluster around the ring, biggest supporters first within a type
+  const ordered = [...supporters].sort(
+    (a, b) => CATEGORIES.indexOf(a.category) - CATEGORIES.indexOf(b.category) || totalGiving(b) - totalGiving(a),
+  )
+  ordered.forEach((s, i) => {
+    const total = totalGiving(s)
+    const angle = -Math.PI / 2 + (i / ordered.length) * Math.PI * 2
+    const ring = i % RINGS.length
+    const homeX = Math.cos(angle) * RINGS[ring] * X_STRETCH
+    const homeY = Math.sin(angle) * RINGS[ring] * Y_STRETCH
+    nodes.push({ id: s.id, type: 'supporter', name: s.name, data: s, total, homeX, homeY, angle, ring, x: homeX, y: homeY })
+    links.push({
+      source: s.id,
+      target: CEMETERY_ID,
+      label: total > 0 ? formatUSD(total) : 'In-kind',
+      dashed: s.relationship === 'sponsor',
+    })
+  })
   return { nodes, links }
 }
 
-function nodeLabel(d: GraphNode) {
-  if (d.type === 'event') return d.data.name
-  // "J. Whitfield": initial + surname keeps relatives apart, and suffixes like "Jr." are skipped
-  const parts = d.data.name.split(' ').filter((w) => !/^(jr|sr|ii|iii|iv)\.?$/i.test(w))
-  return parts.length > 1 ? `${parts[0][0]}. ${parts[parts.length - 1]}` : parts[0] ?? d.data.name
-}
-
-function nodeRadius(d: PersonNode) {
-  return d.data.notable ? 14 : 10
+/**
+ * Outer-ring labels point away from the centre. Inner-ring labels sit above or below their node,
+ * since pointing outward would run them into the outer ring.
+ */
+function labelPosition(d: GraphNode, r: number) {
+  if (d.type === 'hub') return { x: 0, y: r + 18, anchor: 'middle' }
+  const cos = Math.cos(d.angle)
+  const sin = Math.sin(d.angle)
+  if (d.ring === 0 || Math.abs(cos) < 0.25) return { x: 0, y: sin < 0 ? -r - 8 : r + 16, anchor: 'middle' }
+  return { x: cos > 0 ? r + 7 : -r - 7, y: 4, anchor: cos > 0 ? 'start' : 'end' }
 }
 
 interface HoverState {
@@ -86,17 +93,15 @@ interface HoverState {
 }
 
 function nodeMeta(d: GraphNode) {
-  return d.type === 'person'
-    ? `${d.data.birth}–${d.data.death} · ${d.data.demographics.occupation}`
-    : `${yearRange(d.data.year_range)} · ${d.data.type}`
+  if (d.type === 'hub') return `Est. 1886 · ${supporters.length} supporters`
+  const role = d.data.relationship === 'sponsor' ? 'Sponsor' : 'Donor'
+  return `${d.data.category} · ${role} · ${d.total > 0 ? formatUSD(d.total) : 'In-kind'}`
 }
 
 export default function NetworkGraph({
-  mode,
   selection,
   onSelect,
 }: {
-  mode: GraphMode
   selection: Selection | null
   onSelect: (id: string | null) => void
 }) {
@@ -115,8 +120,8 @@ export default function NetworkGraph({
     onSelectRef.current = onSelect
   }, [onSelect])
 
-  // Build the graph. Runs only when the mode changes, never on selection or resize,
-  // so the layout stays put while people explore it.
+  // Build the graph once. Selection and resize never rebuild it, so the layout stays
+  // put while people explore.
   useEffect(() => {
     const svgEl = svgRef.current
     const container = containerRef.current
@@ -125,7 +130,10 @@ export default function NetworkGraph({
     const svg = d3.select(svgEl)
     svg.selectAll('*').remove()
 
-    const { nodes, links } = buildGraph(mode)
+    const { nodes, links } = buildGraph()
+    const maxTotal = d3.max(nodes, (n) => (n.type === 'supporter' ? n.total : 0)) || 1
+    const sizeScale = d3.scaleSqrt().domain([0, maxTotal]).range([8, 22])
+    const radius = (d: GraphNode) => (d.type === 'hub' ? HUB_RADIUS : sizeScale(d.total))
     nodesRef.current = nodes
 
     const g = svg.append('g')
@@ -138,10 +146,10 @@ export default function NetworkGraph({
 
     const simulation = d3
       .forceSimulation<GraphNode>(nodes)
-      .force('link', d3.forceLink<GraphNode, GraphLink>(links).id((d) => d.id).distance(100).strength(0.4))
-      .force('charge', d3.forceManyBody().strength(-250))
-      .force('center', d3.forceCenter(0, 0))
-      .force('collision', d3.forceCollide(40))
+      .force('link', d3.forceLink<GraphNode, GraphLink>(links).id((d) => d.id).strength(0))
+      .force('x', d3.forceX<GraphNode>((d) => (d.type === 'hub' ? 0 : d.homeX)).strength(0.4))
+      .force('y', d3.forceY<GraphNode>((d) => (d.type === 'hub' ? 0 : d.homeY)).strength(0.4))
+      .force('collision', d3.forceCollide<GraphNode>((d) => radius(d) + 6))
       .alphaDecay(0.03)
       .velocityDecay(0.5)
       .stop()
@@ -153,7 +161,7 @@ export default function NetworkGraph({
       .join('line')
       .attr('class', 'stroke-muted-foreground/50 transition-opacity duration-150')
       .attr('stroke-width', 1.5)
-      .attr('stroke-dasharray', (d) => (d.style === 'dashed' ? '6,4' : d.style === 'dotted' ? '2,4' : null))
+      .attr('stroke-dasharray', (d) => (d.dashed ? '6,4' : null))
 
     const linkLabel = g
       .append('g')
@@ -177,7 +185,7 @@ export default function NetworkGraph({
       .attr('class', 'cursor-pointer transition-opacity duration-150 outline-none')
       .attr('tabindex', 0)
       .attr('role', 'button')
-      .attr('aria-label', (d) => d.data.name)
+      .attr('aria-label', (d) => d.name)
       .call(
         d3
           .drag<SVGGElement, GraphNode>()
@@ -199,45 +207,41 @@ export default function NetworkGraph({
 
     node.each(function (d) {
       const el = d3.select(this)
-      if (d.type === 'event') {
-        el.append('rect')
-          .attr('class', 'ring fill-none stroke-primary opacity-0 transition-opacity')
-          .attr('x', -25)
-          .attr('y', -19)
-          .attr('width', 50)
-          .attr('height', 38)
-          .attr('rx', 9)
-          .attr('stroke-width', 2)
-        el.append('rect')
-          .attr('class', 'fill-chart-3 stroke-background')
-          .attr('x', -20)
-          .attr('y', -14)
-          .attr('width', 40)
-          .attr('height', 28)
-          .attr('rx', 6)
-          .attr('stroke-width', 2)
-      } else {
-        const r = nodeRadius(d)
-        el.append('circle')
-          .attr('class', 'ring fill-none stroke-primary opacity-0 transition-opacity')
-          .attr('r', r + 5)
-          .attr('stroke-width', 2)
-        el.append('circle')
-          .attr('class', d.data.notable ? 'fill-chart-1 stroke-background' : 'fill-chart-2 stroke-background')
-          .attr('r', r)
-          .attr('stroke-width', 2)
+      const r = radius(d)
+      el.append('circle')
+        .attr('class', 'ring fill-none stroke-primary opacity-0 transition-opacity')
+        .attr('r', r + 5)
+        .attr('stroke-width', 2)
+      el.append('circle')
+        .attr('class', `${d.type === 'hub' ? 'fill-primary' : CATEGORY_STYLES[d.data.category].fill} stroke-background`)
+        .attr('r', r)
+        .attr('stroke-width', 2)
+
+      if (d.type === 'supporter' && d.data.verified) {
+        // Check badge marks support confirmed by a public source
+        const badge = el.append('g').attr('transform', `translate(${r * 0.75},${-r * 0.75})`)
+        badge.append('circle').attr('class', 'fill-primary stroke-background').attr('r', 6).attr('stroke-width', 1.5)
+        badge
+          .append('path')
+          .attr('d', 'M-2.5 0 L-0.75 1.75 L2.5 -1.75')
+          .attr('class', 'fill-none stroke-primary-foreground')
+          .attr('stroke-width', 1.5)
+          .attr('stroke-linecap', 'round')
+          .attr('stroke-linejoin', 'round')
       }
     })
 
     node
       .append('text')
-      .text(nodeLabel)
+      .text((d) => d.name)
       .attr('class', 'pointer-events-none fill-foreground stroke-background [paint-order:stroke]')
       .attr('stroke-width', 3)
-      .attr('font-size', (d) => (d.type === 'event' ? 10 : 11))
-      .attr('font-weight', (d) => (d.type === 'event' || d.data.notable ? 600 : 400))
-      .attr('text-anchor', 'middle')
-      .attr('dy', (d) => (d.type === 'event' ? 30 : d.data.notable ? 28 : 24))
+      .attr('font-size', (d) => (d.type === 'hub' ? 13 : 11))
+      .attr('font-weight', (d) => (d.type === 'hub' || d.data.verified ? 600 : 400))
+      .each(function (d) {
+        const pos = labelPosition(d, radius(d))
+        d3.select(this).attr('x', pos.x).attr('y', pos.y).attr('text-anchor', pos.anchor)
+      })
 
     // Dim everything except the focused node and its neighbours
     const neighbours = new Map<string, Set<string>>()
@@ -258,7 +262,8 @@ export default function NetworkGraph({
         `ring fill-none stroke-primary transition-opacity ${d.id === selectedId ? 'opacity-100' : 'opacity-0'}`,
       )
       link.style('opacity', (l) => (!focus || endId(l.source) === focus || endId(l.target) === focus ? 1 : 0.1))
-      linkLabel.style('opacity', (l) => (focus && (endId(l.source) === focus || endId(l.target) === focus) ? 1 : 0))
+      // Every edge touches the hub, so only label edges when a supporter is in focus
+      linkLabel.style('opacity', (l) => (focus && focus !== CEMETERY_ID && endId(l.source) === focus ? 1 : 0))
     }
 
     node
@@ -277,7 +282,7 @@ export default function NetworkGraph({
         setHover({
           x: box.left + box.width / 2 - host.left,
           y: box.top - host.top,
-          name: d.data.name,
+          name: d.name,
           meta: nodeMeta(d),
         })
       })
@@ -305,15 +310,17 @@ export default function NetworkGraph({
 
     fitRef.current = (animate) => {
       const { width, height } = svgEl.getBoundingClientRect()
-      const xs = nodes.map((n) => n.x ?? 0)
-      const ys = nodes.map((n) => n.y ?? 0)
-      const [x0, x1] = d3.extent(xs) as [number, number]
-      const [y0, y1] = d3.extent(ys) as [number, number]
-      const k = Math.min(1.2, (width - FIT_PADDING * 2) / Math.max(1, x1 - x0), (height - FIT_PADDING * 2) / Math.max(1, y1 - y0))
+      // Measure the drawn content (labels included) rather than node centres
+      const box = g.node()!.getBBox()
+      const k = Math.min(
+        1.2,
+        (width - FIT_PADDING * 2) / Math.max(1, box.width),
+        (height - FIT_PADDING * 2) / Math.max(1, box.height),
+      )
       const t = d3.zoomIdentity
         .translate(width / 2, height / 2)
         .scale(k)
-        .translate(-(x0 + x1) / 2, -(y0 + y1) / 2)
+        .translate(-(box.x + box.width / 2), -(box.y + box.height / 2))
       if (animate) svg.transition().duration(500).call(zoom.transform, t)
       else svg.call(zoom.transform, t)
     }
@@ -330,7 +337,7 @@ export default function NetworkGraph({
       simulation.stop()
       svg.on('.zoom', null).on('click', null)
     }
-  }, [mode])
+  }, [])
 
   // Selection is driven from outside (graph clicks, search, detail links)
   useEffect(() => {
@@ -344,7 +351,7 @@ export default function NetworkGraph({
     const k = Math.max(1.4, d3.zoomTransform(svgRef.current).k)
     const t = d3.zoomIdentity.translate(width / 2, height / 2).scale(k).translate(-node.x, -node.y)
     d3.select(svgRef.current).transition().duration(600).call(zoomRef.current.transform, t)
-  }, [selection, mode])
+  }, [selection])
 
   const zoomBy = useCallback((factor: number) => {
     if (!svgRef.current || !zoomRef.current) return

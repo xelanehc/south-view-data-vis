@@ -37,13 +37,13 @@ export default function AboutDialog() {
           <div>
             <h3 className="font-medium">Network</h3>
             <p className="text-muted-foreground">
-              Explore how the people buried here were connected, either through family and
-              friendship or through the historical events they took part in.
+              See the sponsors and donors who support South-View and how each one has
+              contributed to the cemetery over time.
             </p>
           </div>
           <p className="rounded-md border bg-muted/50 p-3 text-muted-foreground">
-            The names, biographies and statistics shown are sample data for demonstration. The
-            structure is ready to be filled in with real archival records.
+            Most names, biographies, statistics and supporters shown are sample data for
+            demonstration. Supporters marked Verified are confirmed by public sources.
           </p>
         </div>
       </DialogContent>
