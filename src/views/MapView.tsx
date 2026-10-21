@@ -1,5 +1,5 @@
 import 'leaflet/dist/leaflet.css'
-import type { LatLngBoundsExpression, LatLngExpression } from 'leaflet'
+import type { LatLngBoundsExpression } from 'leaflet'
 import { PauseIcon, PlayIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MapContainer, Polygon, TileLayer, Tooltip, useMap } from 'react-leaflet'
@@ -19,86 +19,23 @@ const PLAY_INTERVAL_MS = 1467
 const AUTOPLAY_DELAY_MS = 1000
 const LAST = mapSnapshots.length - 1
 
-// Full class strings so Tailwind can see them. Colors come from the theme's chart tokens.
-const SECTION_STYLES: Record<string, { path: string; dot: string }> = {
-  A: { path: 'fill-chart-1 stroke-chart-1', dot: 'bg-chart-1' },
-  B: { path: 'fill-chart-2 stroke-chart-2', dot: 'bg-chart-2' },
-  C: { path: 'fill-chart-3 stroke-chart-3', dot: 'bg-chart-3' },
-  D: { path: 'fill-chart-4 stroke-chart-4', dot: 'bg-chart-4' },
-  E: { path: 'fill-chart-5 stroke-chart-5', dot: 'bg-chart-5' },
-  F: { path: 'fill-chart-6 stroke-chart-6', dot: 'bg-chart-6' },
-}
-
-// Section polygons tile the cemetery from north to south. The western boundary
-// follows Jonesboro Rd (GA 54) which runs NW–SE diagonally, so the western
-// edge shifts east as sections go further south. The eastern boundary runs
-// roughly straight along the tree line.
-
-const SECTION_POLYGONS: Record<string, LatLngExpression[]> = {
-  // Section A — northernmost strip (original plot)
-  A: [
-    [33.7035, -84.3710],
-    [33.7035, -84.3660],
-    [33.7027, -84.3660],
-    [33.7027, -84.3709],
-  ],
-  // Section B — second strip from north
-  B: [
-    [33.7027, -84.3709],
-    [33.7027, -84.3660],
-    [33.7019, -84.3660],
-    [33.7019, -84.3707],
-  ],
-  // Section C — middle strip
-  C: [
-    [33.7019, -84.3707],
-    [33.7019, -84.3660],
-    [33.7011, -84.3660],
-    [33.7011, -84.3704],
-  ],
-  // Section D — south-center strip
-  D: [
-    [33.7011, -84.3704],
-    [33.7011, -84.3660],
-    [33.7003, -84.3660],
-    [33.7003, -84.3700],
-  ],
-  // Section E — second from south
-  E: [
-    [33.7003, -84.3700],
-    [33.7003, -84.3660],
-    [33.6997, -84.3660],
-    [33.6997, -84.3697],
-  ],
-  // Section F — southernmost strip
-  F: [
-    [33.6997, -84.3697],
-    [33.6997, -84.3660],
-    [33.6991, -84.3660],
-    [33.6991, -84.3694],
-  ],
-}
-
-function sectionBounds(sections: string[]): LatLngBoundsExpression | null {
+function footprintBounds(footprint: [number, number][]): LatLngBoundsExpression | null {
   let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180
-  for (const section of sections) {
-    for (const pt of SECTION_POLYGONS[section] ?? []) {
-      const [lat, lng] = pt as [number, number]
-      minLat = Math.min(minLat, lat)
-      maxLat = Math.max(maxLat, lat)
-      minLng = Math.min(minLng, lng)
-      maxLng = Math.max(maxLng, lng)
-    }
+  for (const [lat, lng] of footprint) {
+    minLat = Math.min(minLat, lat)
+    maxLat = Math.max(maxLat, lat)
+    minLng = Math.min(minLng, lng)
+    maxLng = Math.max(maxLng, lng)
   }
   return maxLat < minLat ? null : [[minLat, minLng], [maxLat, maxLng]]
 }
 
-function SectionOverlays({ snapshot }: { snapshot: MapSnapshot }) {
+function FootprintOverlays({ snapshot }: { snapshot: MapSnapshot }) {
   const map = useMap()
   const first = useRef(true)
 
   useEffect(() => {
-    const bounds = sectionBounds(snapshot.sections_active)
+    const bounds = footprintBounds(snapshot.footprint)
     if (!bounds) return
     const options = { padding: [60, 60] as [number, number], maxZoom: 17 }
     if (first.current) {
@@ -109,21 +46,19 @@ function SectionOverlays({ snapshot }: { snapshot: MapSnapshot }) {
     }
   }, [snapshot, map])
 
-  // All polygons stay mounted and fade in/out, so sections appear smoothly
+  // Every date's footprint stays mounted and fades in/out, so the cemetery appears to grow
+  // smoothly. Adding polygons mid-flyToBounds would also render them offset.
   return (
     <>
-      {Object.entries(SECTION_POLYGONS).map(([section, poly]) => {
-        const active = snapshot.sections_active.includes(section)
+      {mapSnapshots.map((s) => {
+        const active = s.year === snapshot.year
         return (
           <Polygon
-            key={section}
-            positions={poly}
+            key={s.year}
+            positions={s.footprint}
             interactive={active}
             pathOptions={{
-              className: cn(
-                SECTION_STYLES[section].path,
-                'transition-[fill-opacity,stroke-opacity] duration-500',
-              ),
+              className: 'fill-chart-1 stroke-chart-1 transition-[fill-opacity,stroke-opacity] duration-500',
               fillOpacity: active ? 0.28 : 0,
               opacity: active ? 0.9 : 0,
               weight: 2,
@@ -131,7 +66,7 @@ function SectionOverlays({ snapshot }: { snapshot: MapSnapshot }) {
           >
             {active && (
               <Tooltip sticky className="sv-tooltip">
-                Section {section}
+                Developed area, {s.year}
               </Tooltip>
             )}
           </Polygon>
@@ -203,15 +138,13 @@ function Timeline({
   )
 }
 
-function SectionLegend({ sections }: { sections: string[] }) {
+function FootprintLegend() {
   return (
     <Card className="absolute top-3 right-3 z-[1000] gap-1.5 bg-background/95 px-3 py-2.5 text-xs shadow-sm backdrop-blur">
-      {sections.map((s) => (
-        <div key={s} className="flex items-center gap-2">
-          <span className={cn('size-2.5 rounded-sm', SECTION_STYLES[s].dot)} />
-          <span>Section {s}</span>
-        </div>
-      ))}
+      <div className="flex items-center gap-2">
+        <span className="size-2.5 rounded-sm bg-chart-1" />
+        <span>Developed area</span>
+      </div>
     </Card>
   )
 }
@@ -268,7 +201,7 @@ export default function MapView() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             eventHandlers={{ load: () => setTilesReady(true) }}
           />
-          <SectionOverlays snapshot={snapshot} />
+          <FootprintOverlays snapshot={snapshot} />
         </MapContainer>
 
         <div
@@ -281,7 +214,7 @@ export default function MapView() {
           <Skeleton className="h-full w-full rounded-none" />
         </div>
 
-        <SectionLegend sections={snapshot.sections_active} />
+        <FootprintLegend />
         <Timeline
           index={index}
           onChange={(i) => {

@@ -34,9 +34,9 @@ src/
 │   ├── individuals.json     # 30 individuals (notable figures on the map)
 │   ├── events.json          # 6 historical events (kept, not currently displayed)
 │   ├── supporters.json      # Sponsors and donors (2 verified, the rest sample)
-│   └── map_snapshots.json   # 6 time snapshots (1890–1970) with burial stats
+│   └── map_snapshots.json   # 10 dated footprints (1886–2026) with burial stats
 ├── views/
-│   ├── MapView.tsx          # Leaflet map + time slider + section polygons
+│   ├── MapView.tsx          # Leaflet map + time slider + footprint polygons
 │   └── NetworkGraphView.tsx # Supporter network: legend, graph, side panel
 ├── lib/                     # cn() helper and shared formatters
 └── components/
@@ -56,15 +56,15 @@ Key data models (`src/types.ts`):
 - **Individual** — name, birth/death years, burial section/plot, bio, demographics, a `relations` array (edges to other individuals by type: spouse, parent, sibling, friend, colleague), and an `events` array (links to historical events with a role description).
 - **CemeteryEvent** — name, year range, description, and type classification.
 - **Supporter** — name, category (Government, Nonprofit, Foundation, Corporate, Faith community, Individual), relationship (`donor` or `sponsor`), description, a `contributions` array (year, USD amount or `null` for in-kind, purpose), and `verified` plus `sources` for supporters confirmed by public reporting. Only add a real organization or person with `verified: true` when a public source confirms the support.
-- **MapSnapshot** — a point-in-time view of the cemetery: year, total burials, active sections, notable figure IDs, and demographic aggregates (gender split, average age at death, acreage, historical context text).
+- **MapSnapshot** — a point-in-time view of the cemetery: year, total burials, the cemetery's developed footprint polygon, notable figure IDs, and demographic aggregates (gender split, average age at death, acreage, historical context text).
 
 ### Cemetery Map Tab (`MapView` + `MapSidebar`)
 
 The map uses **Leaflet** via `react-leaflet` with OpenStreetMap tiles centered on the real cemetery coordinates (33.7013, -84.3700).
 
-- **Section overlays**: Six polygon regions (A–F) are defined as coordinate arrays in `SECTION_POLYGONS`. The western boundary follows the diagonal of Jonesboro Rd (GA-54), so each section's western edge shifts east as sections go south. Active sections for each time period are rendered as semi-transparent `<Polygon>` components.
-- **Timeline**: A floating card with play/pause and a shadcn slider controls which `MapSnapshot` is displayed. Changing the snapshot updates the sidebar data and triggers `map.flyToBounds()` to animate the viewport to fit the active sections.
-- **Sidebar**: Displays the selected snapshot's year, total burials, active sections, a gender demographics bar, average age at death, cemetery acreage, historical context paragraph, and a clickable list of notable figures. Clicking a notable figure opens a dialog with their bio.
+- **Footprint overlays**: Each snapshot's `footprint` is the developed extent of the cemetery at that date, traced from aerials (1940, 1949), USGS topo sheets (1954–1993), ARC land-use data (2008) and Fulton County parcels (2026). The 1886 footprint is a low-confidence proxy: the oldest grave grid on the 1940 aerial. Footprints only grow over time. All of them stay mounted as `<Polygon>` components and only the current one is shown, so the cemetery appears to grow as the timeline moves.
+- **Timeline**: A floating card with play/pause and a shadcn slider controls which `MapSnapshot` is displayed. Changing the snapshot updates the sidebar data and triggers `map.flyToBounds()` to animate the viewport to fit the current footprint.
+- **Sidebar**: Displays the selected snapshot's year, total burials, a gender demographics bar, average age at death, cemetery acreage, historical context paragraph, and a clickable list of notable figures. Clicking a notable figure opens a dialog with their bio.
 
 ### Network Tab (`NetworkGraphView`)
 
@@ -80,7 +80,7 @@ A single graph of everyone who has sponsored or donated to South-View, drawn wit
 The UI uses **shadcn/ui** components on its neutral theme. All colours are CSS variables in `src/index.css` (light and dark), so a rebrand only touches that file:
 
 - Base tokens (`--background`, `--foreground`, `--primary`, `--muted`, `--border`, …) drive every component.
-- Data colours are the `--chart-1` … `--chart-6` tokens, used by map sections, the gender bar, and supporter categories. D3 elements get Tailwind classes such as `fill-chart-1`, so the graph follows the theme too.
+- Data colours are the `--chart-1` … `--chart-6` tokens, used by the map footprint, the gender bar, and supporter categories. D3 elements get Tailwind classes such as `fill-chart-1`, so the graph follows the theme too.
 
 ### Routing
 
