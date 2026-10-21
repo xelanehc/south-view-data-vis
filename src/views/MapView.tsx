@@ -1,5 +1,5 @@
 import 'leaflet/dist/leaflet.css'
-import type { LatLngBoundsExpression } from 'leaflet'
+import type { LatLngBoundsExpression, Polygon as LeafletPolygon } from 'leaflet'
 import { PauseIcon, PlayIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MapContainer, Polygon, TileLayer, Tooltip, useMap } from 'react-leaflet'
@@ -71,29 +71,55 @@ function FootprintOverlays({ snapshot }: { snapshot: MapSnapshot }) {
   // Adding polygons mid-flyToBounds would also render them offset.
   return (
     <>
-      {RINGS.map((ring, i) => {
-        const shown = visible.get(ring.year)
-        return (
-          <Polygon
-            key={ring.year}
-            positions={ring.positions}
-            interactive={shown !== undefined}
-            pathOptions={{
-              className: 'fill-chart-1 stroke-chart-1 transition-[fill-opacity,stroke-opacity] duration-500',
-              fillOpacity: shown?.fillOpacity ?? 0,
-              opacity: shown ? 0.9 : 0,
-              weight: 2,
-            }}
-          >
-            {shown && (
-              <Tooltip sticky className="sv-tooltip">
-                {i === 0 ? `Developed by ${ring.year}` : `Added by ${ring.year}`}
-              </Tooltip>
-            )}
-          </Polygon>
-        )
-      })}
+      {RINGS.map((ring, i) => (
+        <FootprintRing
+          key={ring.year}
+          ring={ring}
+          label={i === 0 ? `Developed by ${ring.year}` : `Added by ${ring.year}`}
+          fillOpacity={visible.get(ring.year)?.fillOpacity}
+        />
+      ))}
     </>
+  )
+}
+
+function FootprintRing({
+  ring,
+  label,
+  fillOpacity,
+}: {
+  ring: (typeof RINGS)[number]
+  label: string
+  /** undefined while the ring is hidden */
+  fillOpacity: number | undefined
+}) {
+  const ref = useRef<LeafletPolygon>(null)
+  const shown = fillOpacity !== undefined
+
+  // Leaflet only reads `interactive` when it creates the path, and every ring is created up
+  // front, so all rings are interactive and hidden ones opt out of pointer events here.
+  useEffect(() => {
+    const el = ref.current?.getElement() as SVGPathElement | undefined
+    if (el) el.style.pointerEvents = shown ? '' : 'none'
+  }, [shown])
+
+  return (
+    <Polygon
+      ref={ref}
+      positions={ring.positions}
+      pathOptions={{
+        className: 'fill-chart-1 stroke-chart-1 transition-[fill-opacity,stroke-opacity] duration-500',
+        fillOpacity: fillOpacity ?? 0,
+        opacity: shown ? 0.9 : 0,
+        weight: 2,
+      }}
+    >
+      {shown && (
+        <Tooltip sticky className="sv-tooltip">
+          {label}
+        </Tooltip>
+      )}
+    </Polygon>
   )
 }
 
