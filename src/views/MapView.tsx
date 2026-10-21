@@ -19,6 +19,25 @@ const PLAY_INTERVAL_MS = 1467
 const AUTOPLAY_DELAY_MS = 1000
 const LAST = mapSnapshots.length - 1
 
+// Land added at each date: that date's footprint with the previous one cut out as a hole.
+// Footprints only grow, so the rings tile the current footprint and older boundaries stay
+// visible. Dates that add nothing (1968, 1973 repeat 1954) get no ring.
+const RINGS = mapSnapshots.flatMap((s, i) => {
+  const prev = mapSnapshots[i - 1]
+  if (prev && JSON.stringify(prev.footprint) === JSON.stringify(s.footprint)) return []
+  return [{ year: s.year, index: i, positions: prev ? [s.footprint, prev.footprint] : [s.footprint] }]
+})
+
+// Older rings are shaded darker. `age` is how many visible rings are newer than this one.
+function ringFillOpacity(age: number) {
+  return Math.min(0.25 + 0.05 * age, 0.6)
+}
+
+function visibleRings(index: number) {
+  const rings = RINGS.filter((r) => r.index <= index)
+  return rings.map((r, i) => ({ ...r, fillOpacity: ringFillOpacity(rings.length - 1 - i) }))
+}
+
 function footprintBounds(footprint: [number, number][]): LatLngBoundsExpression | null {
   let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180
   for (const [lat, lng] of footprint) {
@@ -46,27 +65,29 @@ function FootprintOverlays({ snapshot }: { snapshot: MapSnapshot }) {
     }
   }, [snapshot, map])
 
-  // Every date's footprint stays mounted and fades in/out, so the cemetery appears to grow
-  // smoothly. Adding polygons mid-flyToBounds would also render them offset.
+  const visible = new Map(visibleRings(mapSnapshots.indexOf(snapshot)).map((r) => [r.year, r]))
+
+  // Every ring stays mounted and fades in/out, so the cemetery appears to grow smoothly.
+  // Adding polygons mid-flyToBounds would also render them offset.
   return (
     <>
-      {mapSnapshots.map((s) => {
-        const active = s.year === snapshot.year
+      {RINGS.map((ring, i) => {
+        const shown = visible.get(ring.year)
         return (
           <Polygon
-            key={s.year}
-            positions={s.footprint}
-            interactive={active}
+            key={ring.year}
+            positions={ring.positions}
+            interactive={shown !== undefined}
             pathOptions={{
               className: 'fill-chart-1 stroke-chart-1 transition-[fill-opacity,stroke-opacity] duration-500',
-              fillOpacity: active ? 0.28 : 0,
-              opacity: active ? 0.9 : 0,
+              fillOpacity: shown?.fillOpacity ?? 0,
+              opacity: shown ? 0.9 : 0,
               weight: 2,
             }}
           >
-            {active && (
+            {shown && (
               <Tooltip sticky className="sv-tooltip">
-                Developed area, {s.year}
+                {i === 0 ? `Developed by ${ring.year}` : `Added by ${ring.year}`}
               </Tooltip>
             )}
           </Polygon>
@@ -138,13 +159,18 @@ function Timeline({
   )
 }
 
-function FootprintLegend() {
+function FootprintLegend({ index }: { index: number }) {
   return (
     <Card className="absolute top-3 right-3 z-[1000] gap-1.5 bg-background/95 px-3 py-2.5 text-xs shadow-sm backdrop-blur">
-      <div className="flex items-center gap-2">
-        <span className="size-2.5 rounded-sm bg-chart-1" />
-        <span>Developed area</span>
-      </div>
+      <p className="font-medium">Developed by</p>
+      {visibleRings(index).map((r) => (
+        <div key={r.year} className="flex items-center gap-2 tabular-nums">
+          <span className="relative size-2.5 overflow-hidden rounded-sm border border-chart-1">
+            <span className="absolute inset-0 bg-chart-1" style={{ opacity: r.fillOpacity }} />
+          </span>
+          <span>{r.year}</span>
+        </div>
+      ))}
     </Card>
   )
 }
@@ -214,7 +240,7 @@ export default function MapView() {
           <Skeleton className="h-full w-full rounded-none" />
         </div>
 
-        <FootprintLegend />
+        <FootprintLegend index={index} />
         <Timeline
           index={index}
           onChange={(i) => {
