@@ -21,7 +21,7 @@ const LAST = mapSnapshots.length - 1
 
 // Land added at each date: that date's footprint with the previous one cut out as a hole.
 // Footprints only grow, so the rings tile the current footprint and older boundaries stay
-// visible. Dates that add nothing (1968, 1973 repeat 1954) get no ring.
+// visible. A date that adds nothing (same footprint as the previous date) gets no ring.
 const RINGS = mapSnapshots.flatMap((s, i) => {
   const prev = mapSnapshots[i - 1]
   if (prev && JSON.stringify(prev.footprint) === JSON.stringify(s.footprint)) return []
